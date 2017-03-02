@@ -1,7 +1,14 @@
-# Kuid2Hash
+# Trainz Kuid2Hash
 
-![alt tag](kuid2hash.png)
+This application helps you identify the folder in the Trainz Assets Database which holds a particular asset without using Content Manager.
 
-This app helps translate the numeric KUIDs to hexadecimals and also helps to identify the proper hash in the Trainz filesystem database.
+Features:
+- Translates numeric KUIDs to hexadecimal
+- Translates hexadecimal KUIDs to decimal
+- Calculates the hash for a specific KUID -> Used to identify the directory in which a particular Trainz asset is stored
 
 [Download latest release here](bin/Debug/Kuid2Hash.exe)
+
+Screenshot:
+
+![screenshot](kuid2hash.png)
