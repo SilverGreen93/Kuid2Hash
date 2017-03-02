@@ -7,7 +7,7 @@ Features:
 - Translates hexadecimal KUIDs to decimal
 - Calculates the hash for a specific KUID -> Used to identify the directory in which a particular Trainz asset is stored
 
-[Download latest release here](bin/Debug/Kuid2Hash.exe)
+[Download latest release here](bin/Release/Kuid2Hash.exe)
 
 Screenshot:
 
