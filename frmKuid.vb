@@ -2,6 +2,11 @@
 
 Public Class frmKuid
 
+    ''' <summary>
+    ''' Translates hexadecimal kuids to string
+    ''' </summary>
+    ''' <param name="kuid">Byte-array kuid</param>
+    ''' <returns>Kuid string</returns>
     Function HexToKuid(ByVal kuid As Byte()) As String
         Dim rstring As String = "<kuid"
         Dim ubytes(3), cbytes(3) As Byte
@@ -40,7 +45,7 @@ Public Class frmKuid
     End Function
 
     ''' <summary>
-    ''' Transforms string kuid to 8 byte kuid (for routes/sessions)
+    ''' Translated string kuid to 8 byte kuid (for routes/sessions)
     ''' </summary>
     ''' <param name="kuid">The kuid as string</param>
     ''' <returns>The kuid as 8 bytes</returns>
@@ -118,6 +123,11 @@ Public Class frmKuid
 
     End Function
 
+    ''' <summary>
+    ''' Converts hex string to byte array
+    ''' </summary>
+    ''' <param name="t">String to be parsed</param>
+    ''' <returns>8 byte array</returns>
     Function ConvertHex(ByVal t As String) As Byte()
         Dim data(7) As Byte
         Dim s() As String = t.Split({" "c, "-"c, ":"c, ","c})
@@ -131,10 +141,10 @@ Public Class frmKuid
         Return data
     End Function
 
-    Private Sub TextBox1_TextChanged(sender As Object, e As EventArgs) Handles TextBox1.TextChanged
-        If TextBox1.Focused = True Then
-            TextBox2.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(TextBox1.Text)))
-            TextBox3.Text = BitConverter.ToString(KuidToHex(TextBox1.Text)).Replace("-"c, " "c)
+    Private Sub TextBox1_TextChanged(sender As Object, e As EventArgs) Handles txtKuid.TextChanged
+        If txtKuid.Focused = True Then
+            txtHash.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(txtKuid.Text)))
+            txtHex.Text = BitConverter.ToString(KuidToHex(txtKuid.Text)).Replace("-"c, " "c)
         End If
     End Sub
 
@@ -142,10 +152,10 @@ Public Class frmKuid
         Process.Start("http://vvmm.freeforums.org/")
     End Sub
 
-    Private Sub TextBox3_TextChanged(sender As Object, e As EventArgs) Handles TextBox3.TextChanged
-        If TextBox3.Focused = True Then
-            TextBox1.Text = HexToKuid(ConvertHex(TextBox3.Text))
-            TextBox2.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(TextBox1.Text)))
+    Private Sub TextBox3_TextChanged(sender As Object, e As EventArgs) Handles txtHex.TextChanged
+        If txtHex.Focused = True Then
+            txtKuid.Text = HexToKuid(ConvertHex(txtHex.Text))
+            txtHash.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(txtKuid.Text)))
         End If
     End Sub
 End Class
