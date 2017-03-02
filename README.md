@@ -10,3 +10,6 @@ Features:
 Screenshot:
 
 ![screenshot](kuid2hash.png)
+
+Project created in Visual Studio 2015 using .NET Framework 3.5
+Should work on Windows XP, Vista, 7, 8, 8.1, 10
