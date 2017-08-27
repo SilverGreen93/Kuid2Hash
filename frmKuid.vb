@@ -141,10 +141,39 @@ Public Class frmKuid
         Return data
     End Function
 
+
+    ''' <summary>
+    ''' Reverses the UID with the CID (for map files)
+    ''' </summary>
+    ''' <param name="kuid">The kuid as 8 bytes</param>
+    ''' <returns>The reversed kuid as 8 bytes</returns>
+    ''' <remarks></remarks>
+    Function revKuid(ByVal kuid As Byte()) As Byte()
+
+        Dim rbytes(7) As Byte   'returned bytes
+
+        Try
+            'reverse bytes (a-b-c-d-e-f-g-h -> e-f-g-h-a-b-c-d)
+            For i As Integer = 0 To 3
+                rbytes(i) = kuid(i + 4)
+                rbytes(i + 4) = kuid(i)
+            Next
+        Catch ex As Exception
+            MessageBox.Show(ex.ToString, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+
+        Return rbytes
+
+    End Function
+
     Private Sub TextBox1_TextChanged(sender As Object, e As EventArgs) Handles txtKuid.TextChanged
         If txtKuid.Focused = True Then
             txtHash.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(txtKuid.Text)))
-            txtHex.Text = BitConverter.ToString(KuidToHex(txtKuid.Text)).Replace("-"c, " "c)
+            If CheckBox1.Checked = True Then
+                txtHex.Text = BitConverter.ToString(revKuid(KuidToHex(txtKuid.Text))).Replace("-"c, " "c)
+            Else
+                txtHex.Text = BitConverter.ToString(KuidToHex(txtKuid.Text)).Replace("-"c, " "c)
+            End If
         End If
     End Sub
 
@@ -154,8 +183,17 @@ Public Class frmKuid
 
     Private Sub TextBox3_TextChanged(sender As Object, e As EventArgs) Handles txtHex.TextChanged
         If txtHex.Focused = True Then
-            txtKuid.Text = HexToKuid(ConvertHex(txtHex.Text))
+            If CheckBox1.Checked = True Then
+                txtKuid.Text = HexToKuid(revKuid(ConvertHex(txtHex.Text)))
+            Else
+                txtKuid.Text = HexToKuid(ConvertHex(txtHex.Text))
+            End If
             txtHash.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(txtKuid.Text)))
         End If
     End Sub
+
+    Private Sub CheckBox1_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBox1.CheckedChanged
+        txtHex.Text = BitConverter.ToString(revKuid(ConvertHex(txtHex.Text))).Replace("-"c, " "c)
+    End Sub
+
 End Class

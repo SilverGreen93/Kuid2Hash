@@ -9,10 +9,10 @@ Imports System.Runtime.InteropServices
 ' Review the values of the assembly attributes
 
 <Assembly: AssemblyTitle("Kuid2Hash")>
-<Assembly: AssemblyDescription("")>
+<Assembly: AssemblyDescription("Utility for converting numeric kuids to hexadecimal values.")>
 <Assembly: AssemblyCompany("vvmm")>
 <Assembly: AssemblyProduct("Kuid2Hash")>
-<Assembly: AssemblyCopyright("Copyright © vvmm 2016")>
+<Assembly: AssemblyCopyright("Copyright © vvmm 2017")>
 <Assembly: AssemblyTrademark("")>
 
 <Assembly: ComVisible(False)>
@@ -31,5 +31,5 @@ Imports System.Runtime.InteropServices
 ' by using the '*' as shown below:
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("1.0.0.0")>
-<Assembly: AssemblyFileVersion("1.0.0.0")>
+<Assembly: AssemblyVersion("1.1.0.0")>
+<Assembly: AssemblyFileVersion("1.1.0.0")>

@@ -31,6 +31,7 @@ Partial Class frmKuid
         Me.Label3 = New System.Windows.Forms.Label()
         Me.Label4 = New System.Windows.Forms.Label()
         Me.txtHex = New System.Windows.Forms.TextBox()
+        Me.CheckBox1 = New System.Windows.Forms.CheckBox()
         Me.SuspendLayout()
         '
         'txtKuid
@@ -40,6 +41,7 @@ Partial Class frmKuid
         Me.txtKuid.Name = "txtKuid"
         Me.txtKuid.Size = New System.Drawing.Size(228, 27)
         Me.txtKuid.TabIndex = 0
+        Me.txtKuid.Text = "<kuid2:474195:123456:1>"
         '
         'txtHash
         '
@@ -49,6 +51,7 @@ Partial Class frmKuid
         Me.txtHash.ReadOnly = True
         Me.txtHash.Size = New System.Drawing.Size(228, 27)
         Me.txtHash.TabIndex = 1
+        Me.txtHash.Text = "hash-CB"
         '
         'Label1
         '
@@ -72,7 +75,7 @@ Partial Class frmKuid
         '
         Me.LinkLabel1.AutoSize = True
         Me.LinkLabel1.Font = New System.Drawing.Font("Microsoft Sans Serif", 7.8!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.LinkLabel1.Location = New System.Drawing.Point(63, 128)
+        Me.LinkLabel1.Location = New System.Drawing.Point(64, 150)
         Me.LinkLabel1.Name = "LinkLabel1"
         Me.LinkLabel1.Size = New System.Drawing.Size(181, 17)
         Me.LinkLabel1.TabIndex = 12
@@ -83,7 +86,7 @@ Partial Class frmKuid
         '
         Me.Label3.AutoSize = True
         Me.Label3.Font = New System.Drawing.Font("Microsoft Sans Serif", 7.8!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.Label3.Location = New System.Drawing.Point(93, 111)
+        Me.Label3.Location = New System.Drawing.Point(94, 133)
         Me.Label3.Name = "Label3"
         Me.Label3.Size = New System.Drawing.Size(120, 17)
         Me.Label3.TabIndex = 11
@@ -106,12 +109,25 @@ Partial Class frmKuid
         Me.txtHex.Name = "txtHex"
         Me.txtHex.Size = New System.Drawing.Size(228, 27)
         Me.txtHex.TabIndex = 13
+        Me.txtHex.Text = "53 3C 07 02 40 E2 01 00"
+        '
+        'CheckBox1
+        '
+        Me.CheckBox1.AutoSize = True
+        Me.CheckBox1.Font = New System.Drawing.Font("Microsoft Sans Serif", 10.2!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.CheckBox1.Location = New System.Drawing.Point(93, 107)
+        Me.CheckBox1.Name = "CheckBox1"
+        Me.CheckBox1.Size = New System.Drawing.Size(128, 24)
+        Me.CheckBox1.TabIndex = 15
+        Me.CheckBox1.Text = "Reverse kuid"
+        Me.CheckBox1.UseVisualStyleBackColor = True
         '
         'frmKuid
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(11.0!, 20.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(315, 155)
+        Me.ClientSize = New System.Drawing.Size(315, 180)
+        Me.Controls.Add(Me.CheckBox1)
         Me.Controls.Add(Me.Label4)
         Me.Controls.Add(Me.txtHex)
         Me.Controls.Add(Me.LinkLabel1)
@@ -126,7 +142,7 @@ Partial Class frmKuid
         Me.Margin = New System.Windows.Forms.Padding(4)
         Me.MaximizeBox = False
         Me.Name = "frmKuid"
-        Me.Text = "Kuid2Hash v1.0"
+        Me.Text = "Kuid2Hash v1.1"
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -140,4 +156,5 @@ Partial Class frmKuid
     Friend WithEvents Label3 As Label
     Friend WithEvents Label4 As Label
     Friend WithEvents txtHex As TextBox
+    Friend WithEvents CheckBox1 As CheckBox
 End Class
