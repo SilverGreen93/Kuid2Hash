@@ -8,6 +8,10 @@ Public Class frmKuid
     ''' <param name="kuid">Byte-array kuid</param>
     ''' <returns>Kuid string</returns>
     Function HexToKuid(ByVal kuid As Byte()) As String
+        If kuid Is Nothing OrElse kuid.Length < 8 Then
+            Throw New ArgumentException("kuid must contain at least 8 bytes.", "kuid")
+        End If
+
         Dim rstring As String = "<kuid"
         Dim ubytes(3), cbytes(3) As Byte
         Dim version As Integer
