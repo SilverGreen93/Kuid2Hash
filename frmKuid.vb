@@ -7,7 +7,7 @@ Public Class frmKuid
     ''' </summary>
     ''' <param name="kuid">Byte-array kuid</param>
     ''' <returns>Kuid string</returns>
-    Function HexToKuid(ByVal kuid As Byte()) As String
+    Shared Function HexToKuid(ByVal kuid As Byte()) As String
         If kuid Is Nothing OrElse (kuid.Length <> 8 AndAlso kuid.Length <> 4) Then
             Throw New ArgumentException("kuid must contain exactly 8 bytes, or 4 bytes for a uid -1 kuid.", "kuid")
         End If
@@ -61,9 +61,9 @@ Public Class frmKuid
     ''' Translated string kuid to 8 byte kuid (for routes/sessions)
     ''' </summary>
     ''' <param name="kuid">The kuid as string (e.g. "kuid 68787 1097", "<kuid2:68787:1097:3>", or a uid -1 kuid like "<kuid:-1:1097>")</param>
-    ''' <returns>The kuid as 8 bytes (a uid of -1 is stored as FF FF FF FF)</returns>
+    ''' <returns>The kuid as 8 bytes, or only the 4 content id bytes when the uid is -1</returns>
     ''' <remarks></remarks>
-    Function KuidToHex(ByVal kuid As String) As Byte()
+    Shared Function KuidToHex(ByVal kuid As String) As Byte()
         Dim num(2) As Integer                           'variable to store kuid parts
         Dim ubytes(3), cbytes(3) As Byte                'user bytes and content bytes
         Dim str() As String                             'split kuid to tokens
@@ -98,6 +98,11 @@ Public Class frmKuid
             ubytes(3) = ubytes(3) Xor (CByte(num(2)) << 1)  'add the version number to byte 4 of uid
         End If
 
+        'a uid of -1 drops the FF FF FF FF user part: only the content id bytes are returned
+        If num(0) = -1 Then
+            Return cbytes
+        End If
+
         'merge bytes (always exactly 8: 4 user + 4 content)
         For i As Integer = 0 To 3
             rbytes(i) = ubytes(i)
@@ -114,19 +119,19 @@ Public Class frmKuid
     ''' <param name="kuid">Kuid to be hashed</param>
     ''' <returns>One byte - hash code</returns>
     ''' <remarks></remarks>
-    Function computeHash(ByVal kuid As Byte()) As Byte()
+    Shared Function computeHash(ByVal kuid As Byte()) As Byte
 
-        Dim hash As Byte() = {&H0}
+        Dim hash As Byte = &H0
 
         Try
             'calculate hash using xor; a 4 byte input is the content id of a uid -1 kuid,
             'whose implicit FF FF FF FF user part xors to zero and does not affect the hash
             For i As Integer = 0 To IIf(kuid.Length = 4, 3, 7)
-                hash(0) = hash(0) Xor kuid(i)
+                hash = hash Xor kuid(i)
             Next
             'version needs to be ignored, so xor that out, only if uid is positive (8 byte kuids only)
             If kuid.Length = 8 AndAlso (kuid(3) And (1 << 0)) = 0 Then
-                hash(0) = hash(0) Xor kuid(3)
+                hash = hash Xor kuid(3)
             End If
 
         Catch ex As Exception
@@ -142,7 +147,7 @@ Public Class frmKuid
     ''' </summary>
     ''' <param name="t">String to be parsed</param>
     ''' <returns>8 byte array (4 bytes for a uid -1 kuid)</returns>
-    Function ConvertHex(ByVal t As String) As Byte()
+    Shared Function ConvertHex(ByVal t As String) As Byte()
         If String.IsNullOrEmpty(t) Then
             Throw New ArgumentException("Hex string must not be empty.", "t")
         End If
@@ -191,11 +196,11 @@ Public Class frmKuid
         If txtKuid.Focused = True Then
             Try
                 Dim kuidBytes As Byte() = KuidToHex(txtKuid.Text)
-                txtHash.Text = "hash-" & BitConverter.ToString(computeHash(kuidBytes))
+                txtHash.Text = "hash-" & computeHash(kuidBytes).ToString("X2")
                 'a uid -1 kuid drops the FF FF FF FF user part from the hex display;
-                'the Reverse kuid checkbox has no effect on it
-                If BitConverter.ToInt32(kuidBytes, 0) = -1 Then
-                    txtHex.Text = BitConverter.ToString(kuidBytes, 4, 4).Replace("-"c, " "c)
+                'the Reverse kuid checkbox has no effect on it (KuidToHex returns only its 4 content id bytes)
+                If kuidBytes.Length = 4 Then
+                    txtHex.Text = BitConverter.ToString(kuidBytes).Replace("-"c, " "c)
                 ElseIf CheckBox1.Checked = True Then
                     txtHex.Text = BitConverter.ToString(revKuid(kuidBytes)).Replace("-"c, " "c)
                 Else
@@ -220,7 +225,7 @@ Public Class frmKuid
                     hexBytes = revKuid(hexBytes)
                 End If
                 txtKuid.Text = HexToKuid(hexBytes)
-                txtHash.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(txtKuid.Text)))
+                txtHash.Text = "hash-" & computeHash(KuidToHex(txtKuid.Text)).ToString("X2")
             Catch ex As Exception
                 ' Ignore transient/invalid input while typing; keep the last valid values.
             End Try
