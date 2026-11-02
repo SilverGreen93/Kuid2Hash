@@ -51,7 +51,7 @@ Public Class frmKuid
     ''' <summary>
     ''' Translated string kuid to 8 byte kuid (for routes/sessions)
     ''' </summary>
-    ''' <param name="kuid">The kuid as string</param>
+    ''' <param name="kuid">The kuid as string (e.g. "kuid 68787 1097", "<kuid2:68787:1097:3>")</param>
     ''' <returns>The kuid as 8 bytes</returns>
     ''' <remarks></remarks>
     Function KuidToHex(ByVal kuid As String) As Byte()
@@ -65,15 +65,17 @@ Public Class frmKuid
         End If
 
         'strip any surrounding angle brackets emitted by HexToKuid (e.g. "<kuid2:...>")
-        kuid = kuid.Trim("<"c, ">"c)
+        kuid = kuid.Trim("<"c, ">"c).Trim()
 
-        str = System.Text.RegularExpressions.Regex.Split(kuid, ":")
+        'split on colons and/or whitespace so both "kuid:68787:1097" and "kuid 68787 1097" are accepted
+        str = System.Text.RegularExpressions.Regex.Split(kuid, "[:\s]+")
+        str = Array.FindAll(str, Function(t) Not String.IsNullOrEmpty(t))
 
         If str.Length < 3 Then
-            Throw New ArgumentException("Invalid kuid: expected at least '<kuid:uid:cid>'.", "kuid")
+            Throw New ArgumentException("Invalid kuid: expected at least 'kuid uid cid' (e.g. '<kuid2:68787:1097:3>').", "kuid")
         End If
 
-        'parse the kuid parts (skip the leading tag) and convert to integers
+        'parse the numeric parts (skip the leading tag) and convert to integers
         For i As Integer = 1 To IIf(str.Length > 4, 4, str.Length) - 1
             If Not Integer.TryParse(str(i), NumberStyles.Integer, CultureInfo.InvariantCulture, num(i - 1)) Then
                 Throw New FormatException("Invalid kuid part: '" & str(i) & "'.")
