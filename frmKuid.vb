@@ -64,6 +64,9 @@ Public Class frmKuid
             Throw New ArgumentException("kuid must not be empty.", "kuid")
         End If
 
+        'strip any surrounding angle brackets emitted by HexToKuid (e.g. "<kuid2:...>")
+        kuid = kuid.Trim("<"c, ">"c)
+
         str = System.Text.RegularExpressions.Regex.Split(kuid, ":")
 
         If str.Length < 3 Then
@@ -84,11 +87,15 @@ Public Class frmKuid
             ubytes(3) = ubytes(3) Xor (CByte(num(2)) << 1)  'add the version number to byte 4 of uid
         End If
 
-        'merge bytes
+        'merge bytes (always exactly 8: 4 user + 4 content)
         For i As Integer = 0 To 3
             rbytes(i) = ubytes(i)
             rbytes(i + 4) = cbytes(i)
         Next
+
+        If rbytes.Length <> 8 Then
+            Array.Resize(rbytes, 8)
+        End If
 
         Return rbytes
 
