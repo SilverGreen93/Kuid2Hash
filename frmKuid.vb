@@ -60,40 +60,35 @@ Public Class frmKuid
         Dim str() As String                             'split kuid to tokens
         Dim rbytes(7) As Byte                           'returned bytes
 
-        If kuid = "" Then
-            'MessageBox.Show("NULL kuid encountered!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            'err = True
-            Return {0, 0, 0, 0, 0, 0, 0, 0}
+        If String.IsNullOrEmpty(kuid) Then
+            Throw New ArgumentException("kuid must not be empty.", "kuid")
         End If
 
         str = System.Text.RegularExpressions.Regex.Split(kuid, ":")
 
         If str.Length < 3 Then
-            'MessageBox.Show("Invalid kuid encountered!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-            Return {0, 0, 0, 0, 0, 0, 0, 0}
+            Throw New ArgumentException("Invalid kuid: expected at least '<kuid:uid:cid>'.", "kuid")
         End If
 
-        Try
-            'parse the kuid parts (skip first) and convert to integers
-            For i As Integer = 1 To IIf(str.Length > 4, 4, str.Length) - 1
-                num(i - 1) = Val(str(i))
-            Next
-
-            'get the bytes from integers
-            ubytes = BitConverter.GetBytes(num(0))
-            cbytes = BitConverter.GetBytes(num(1))
-            If (num(2) > 0 AndAlso num(2) < 128 AndAlso num(0) >= 0) Then 'check if uid is negative
-                ubytes(3) = ubytes(3) Xor (CByte(num(2)) << 1)  'add the version number to byte 4 of uid
+        'parse the kuid parts (skip the leading tag) and convert to integers
+        For i As Integer = 1 To IIf(str.Length > 4, 4, str.Length) - 1
+            If Not Integer.TryParse(str(i), NumberStyles.Integer, CultureInfo.InvariantCulture, num(i - 1)) Then
+                Throw New FormatException("Invalid kuid part: '" & str(i) & "'.")
             End If
+        Next
 
-            'merge bytes
-            For i As Integer = 0 To 3
-                rbytes(i) = ubytes(i)
-                rbytes(i + 4) = cbytes(i)
-            Next
-        Catch ex As Exception
-            MessageBox.Show(ex.ToString, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-        End Try
+        'get the bytes from integers
+        ubytes = BitConverter.GetBytes(num(0))
+        cbytes = BitConverter.GetBytes(num(1))
+        If (num(2) > 0 AndAlso num(2) < 128 AndAlso num(0) >= 0) Then 'check if uid is negative
+            ubytes(3) = ubytes(3) Xor (CByte(num(2)) << 1)  'add the version number to byte 4 of uid
+        End If
+
+        'merge bytes
+        For i As Integer = 0 To 3
+            rbytes(i) = ubytes(i)
+            rbytes(i + 4) = cbytes(i)
+        Next
 
         Return rbytes
 
@@ -178,12 +173,17 @@ Public Class frmKuid
 
     Private Sub TextBox1_TextChanged(sender As Object, e As EventArgs) Handles txtKuid.TextChanged
         If txtKuid.Focused = True Then
-            txtHash.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(txtKuid.Text)))
-            If CheckBox1.Checked = True Then
-                txtHex.Text = BitConverter.ToString(revKuid(KuidToHex(txtKuid.Text))).Replace("-"c, " "c)
-            Else
-                txtHex.Text = BitConverter.ToString(KuidToHex(txtKuid.Text)).Replace("-"c, " "c)
-            End If
+            Try
+                Dim kuidBytes As Byte() = KuidToHex(txtKuid.Text)
+                txtHash.Text = "hash-" & BitConverter.ToString(computeHash(kuidBytes))
+                If CheckBox1.Checked = True Then
+                    txtHex.Text = BitConverter.ToString(revKuid(kuidBytes)).Replace("-"c, " "c)
+                Else
+                    txtHex.Text = BitConverter.ToString(kuidBytes).Replace("-"c, " "c)
+                End If
+            Catch ex As Exception
+                ' Ignore transient/invalid input while typing; keep the last valid values.
+            End Try
         End If
     End Sub
 
