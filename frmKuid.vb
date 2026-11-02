@@ -133,13 +133,19 @@ Public Class frmKuid
     ''' <param name="t">String to be parsed</param>
     ''' <returns>8 byte array</returns>
     Function ConvertHex(ByVal t As String) As Byte()
+        If String.IsNullOrEmpty(t) Then
+            Throw New ArgumentException("Hex string must not be empty.", "t")
+        End If
+
+        Dim s() As String = t.Split({" "c, "-"c, ":"c, ","c}, StringSplitOptions.RemoveEmptyEntries)
+        If s.Length <> 8 Then
+            Throw New ArgumentException("Expected exactly 8 hex bytes, got " & s.Length & ".", "t")
+        End If
+
         Dim data(7) As Byte
-        Dim s() As String = t.Split({" "c, "-"c, ":"c, ","c})
-        'data = New Byte(s.Length - 1) {}
-        For i As Integer = 0 To s.Length - 1
-            If Not Byte.TryParse(s(i), NumberStyles.HexNumber, CultureInfo.CurrentCulture, data(i)) Then
-                data(i) = 0
-                'MsgBox("error converting!", MsgBoxStyle.Information)
+        For i As Integer = 0 To 7
+            If Not Byte.TryParse(s(i), NumberStyles.HexNumber, CultureInfo.InvariantCulture, data(i)) Then
+                Throw New FormatException("Invalid hex byte: '" & s(i) & "' in '" & t & "'.")
             End If
         Next
         Return data
@@ -187,12 +193,16 @@ Public Class frmKuid
 
     Private Sub TextBox3_TextChanged(sender As Object, e As EventArgs) Handles txtHex.TextChanged
         If txtHex.Focused = True Then
-            If CheckBox1.Checked = True Then
-                txtKuid.Text = HexToKuid(revKuid(ConvertHex(txtHex.Text)))
-            Else
-                txtKuid.Text = HexToKuid(ConvertHex(txtHex.Text))
-            End If
-            txtHash.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(txtKuid.Text)))
+            Try
+                Dim hexBytes As Byte() = ConvertHex(txtHex.Text)
+                If CheckBox1.Checked = True Then
+                    hexBytes = revKuid(hexBytes)
+                End If
+                txtKuid.Text = HexToKuid(hexBytes)
+                txtHash.Text = "hash-" & BitConverter.ToString(computeHash(KuidToHex(txtKuid.Text)))
+            Catch ex As Exception
+                ' Ignore transient/invalid input while typing; keep the last valid values.
+            End Try
         End If
     End Sub
 
