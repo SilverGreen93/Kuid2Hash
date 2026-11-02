@@ -77,10 +77,10 @@ Partial Class frmKuid
         Me.LinkLabel1.Font = New System.Drawing.Font("Microsoft Sans Serif", 7.8!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.LinkLabel1.Location = New System.Drawing.Point(64, 150)
         Me.LinkLabel1.Name = "LinkLabel1"
-        Me.LinkLabel1.Size = New System.Drawing.Size(181, 17)
+        Me.LinkLabel1.Size = New System.Drawing.Size(200, 16)
         Me.LinkLabel1.TabIndex = 12
         Me.LinkLabel1.TabStop = True
-        Me.LinkLabel1.Text = "http://vvmm.freeforums.org/"
+        Me.LinkLabel1.Text = "https://github.com/SilverGreen93"
         '
         'Label3
         '
@@ -88,9 +88,9 @@ Partial Class frmKuid
         Me.Label3.Font = New System.Drawing.Font("Microsoft Sans Serif", 7.8!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.Label3.Location = New System.Drawing.Point(94, 133)
         Me.Label3.Name = "Label3"
-        Me.Label3.Size = New System.Drawing.Size(120, 17)
+        Me.Label3.Size = New System.Drawing.Size(141, 16)
         Me.Label3.TabIndex = 11
-        Me.Label3.Text = "by vvmm (c) 2017"
+        Me.Label3.Text = "SilverGreen93 (c) 2026"
         '
         'Label4
         '
@@ -142,7 +142,7 @@ Partial Class frmKuid
         Me.Margin = New System.Windows.Forms.Padding(4)
         Me.MaximizeBox = False
         Me.Name = "frmKuid"
-        Me.Text = "Kuid2Hash v1.1"
+        Me.Text = "Kuid2Hash v2.0"
         Me.ResumeLayout(False)
         Me.PerformLayout()
 

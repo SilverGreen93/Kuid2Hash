@@ -178,7 +178,7 @@ Public Class frmKuid
     End Sub
 
     Private Sub LinkLabel1_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
-        Process.Start("http://vvmm.freeforums.org/")
+        Process.Start("https://github.com/SilverGreen93/Kuid2Hash")
     End Sub
 
     Private Sub TextBox3_TextChanged(sender As Object, e As EventArgs) Handles txtHex.TextChanged
