@@ -40,27 +40,27 @@ Public Class frmKuid
         '(only the hex display drops the FF FF FF FF bytes, see TextBox1_TextChanged)
 
         If version <> 0 Then
-            rstring = rstring & "2:"
+            rstring &= "2:"
         Else
-            rstring = rstring & ":"
+            rstring &= ":"
         End If
 
-        rstring = rstring & uInt
-        rstring = rstring & ":"
-        rstring = rstring & BitConverter.ToInt32(cbytes, 0)
+        rstring &= uInt
+        rstring &= ":"
+        rstring &= BitConverter.ToInt32(cbytes, 0)
 
         If version <> 0 Then
-            rstring = rstring & ":" & version
+            rstring &= ":" & version
         End If
 
-        rstring = rstring & ">"
+        rstring &= ">"
         Return rstring
     End Function
 
     ''' <summary>
     ''' Translated string kuid to 8 byte kuid (for routes/sessions)
     ''' </summary>
-    ''' <param name="kuid">The kuid as string (e.g. "kuid 68787 1097", "<kuid2:68787:1097:3>", or a uid -1 kuid like "<kuid:-1:1097>")</param>
+    ''' <param name="kuid">The kuid as string (e.g. "kuid 68787 1097", "&lt;kuid2:68787:1097:3&gt;", or a uid -1 kuid like "&lt;kuid:-1:1097&gt;")</param>
     ''' <returns>The kuid as 8 bytes, or only the 4 content id bytes when the uid is -1</returns>
     ''' <remarks></remarks>
     Shared Function KuidToHex(ByVal kuid As String) As Byte()
@@ -119,7 +119,7 @@ Public Class frmKuid
     ''' <param name="kuid">Kuid to be hashed</param>
     ''' <returns>One byte - hash code</returns>
     ''' <remarks></remarks>
-    Shared Function computeHash(ByVal kuid As Byte()) As Byte
+    Shared Function ComputeHash(ByVal kuid As Byte()) As Byte
 
         Dim hash As Byte = &H0
 
@@ -174,7 +174,7 @@ Public Class frmKuid
     ''' <param name="kuid">The kuid as 8 bytes</param>
     ''' <returns>The reversed kuid as 8 bytes</returns>
     ''' <remarks></remarks>
-    Function revKuid(ByVal kuid As Byte()) As Byte()
+    Function RevKuid(ByVal kuid As Byte()) As Byte()
 
         Dim rbytes(7) As Byte   'returned bytes
 
@@ -196,7 +196,7 @@ Public Class frmKuid
         If txtKuid.Focused = True Then
             Try
                 Dim kuidBytes As Byte() = KuidToHex(txtKuid.Text)
-                txtHash.Text = "hash-" & computeHash(kuidBytes).ToString("X2")
+                txtHash.Text = "hash-" & ComputeHash(kuidBytes).ToString("X2")
                 'a uid -1 kuid drops the FF FF FF FF user part from the hex display;
                 'the Reverse kuid checkbox has no effect on it (KuidToHex returns only its 4 content id bytes)
                 If kuidBytes.Length = 4 Then
@@ -225,7 +225,7 @@ Public Class frmKuid
                     hexBytes = revKuid(hexBytes)
                 End If
                 txtKuid.Text = HexToKuid(hexBytes)
-                txtHash.Text = "hash-" & computeHash(KuidToHex(txtKuid.Text)).ToString("X2")
+                txtHash.Text = "hash-" & ComputeHash(KuidToHex(txtKuid.Text)).ToString("X2")
             Catch ex As Exception
                 ' Ignore transient/invalid input while typing; keep the last valid values.
             End Try

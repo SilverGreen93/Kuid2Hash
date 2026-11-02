@@ -134,9 +134,9 @@ namespace Kuid2Hash.Tests
 
             // ... so the hash is identical either way and matches the CSV value
             var expected = byte.Parse(expectedHash, NumberStyles.HexNumber);
-            Assert.AreEqual(expected, frmKuid.computeHash(fromString),
+            Assert.AreEqual(expected, frmKuid.ComputeHash(fromString),
                 $"computeHash(\"{strKuid}\") should be 0x{expected:X2}");
-            Assert.AreEqual(expected, frmKuid.computeHash(fromBinary),
+            Assert.AreEqual(expected, frmKuid.ComputeHash(fromBinary),
                 $"computeHash(\"{bin}\") should be 0x{expected:X2}");
         }
 
@@ -163,9 +163,9 @@ namespace Kuid2Hash.Tests
                     $"Row \"{row.StrKuid}\": HexToKuid returned \"{str}\" which does not parse back to {ToHex(row.BinKuid)}");
 
                 // hash must be correct from both directions
-                Assert.AreEqual(row.Hash, frmKuid.computeHash(fromString),
+                Assert.AreEqual(row.Hash, frmKuid.ComputeHash(fromString),
                     $"Row \"{row.StrKuid}\": hash of string-derived bytes should be 0x{row.Hash:X2}");
-                Assert.AreEqual(row.Hash, frmKuid.computeHash(row.BinKuid),
+                Assert.AreEqual(row.Hash, frmKuid.ComputeHash(row.BinKuid),
                     $"Row \"{row.StrKuid}\": hash of binary-derived bytes should be 0x{row.Hash:X2}");
             }
         }
