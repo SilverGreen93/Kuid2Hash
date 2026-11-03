@@ -6,6 +6,7 @@
     <AssemblyName>Kuid2Hash</AssemblyName>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ApplicationIcon>Chromatix-Keyboard-Keys-Hash.ico</ApplicationIcon>
     <StartupObject>Sub Main</StartupObject>
 

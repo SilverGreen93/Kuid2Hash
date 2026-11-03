@@ -124,7 +124,7 @@ running:
 
 ## Verification checklist
 
-- [ ] `dotnet build Kuid2Hash.sln -c Release` succeeds on Windows
-- [ ] `dotnet test` passes (all existing MSTest cases)
-- [ ] `dotnet build Kuid2Hash.sln -c Release` succeeds on Linux
+- [x] `dotnet build Kuid2Hash.sln -c Release` succeeds on Windows
+- [x] `dotnet test` passes (all existing MSTest cases)
+- [x] `dotnet build Kuid2Hash.sln -c Release` succeeds on Linux
 - [ ] App still runs correctly on Windows (kuid ↔ hex conversion, hash display, reverse checkbox, link label)

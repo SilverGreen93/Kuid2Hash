@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <IsPackable>false</IsPackable>
     <RootNamespace>Kuid2Hash.Tests</RootNamespace>
     <AssemblyName>Kuid2Hash.Tests</AssemblyName>
