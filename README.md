@@ -4,19 +4,26 @@
 
 This application helps you identify the folder in the Trainz Assets Database which holds a particular asset without using Content Manager.
 
-Features:
+![screenshot](assets/kuid2hash.png)
+
+## Features
 
 - Translates numeric KUIDs to hexadecimal
 - Translates hexadecimal KUIDs to decimal
 - Calculates the hash for a specific KUID -> Used to identify the directory in which a particular Trainz asset is stored
 
-Screenshot:
-
-![screenshot](assets/kuid2hash.png)
+See more about the KUID Format Specification here: [KUID Format Specification](https://github.com/SilverGreen93/CDPExplorer/blob/master/kuid-format.md)
 
 ## Usage
 
 The app runs as a GUI when started without arguments, and as a command line tool when arguments are given.
+
+Run it directly from the source tree (no packaging needed), after [installing it in editable mode](#building-from-source):
+
+```
+kuid2hash                    # starts the GUI
+python -m kuid2hash.cli      # same thing without installing the script entry point
+```
 
 CLI examples:
 
