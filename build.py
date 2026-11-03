@@ -225,10 +225,10 @@ def build_zst() -> Path:
             "fpm not found - install it (gem install fpm) to build the "
             ".pkg.tar.zst"
         )
-    if not have("bsdtar"):
+    if not have("zstd"):
         raise RuntimeError(
-            "bsdtar not found - install it (apt install libarchive-tools) to "
-            "build the .pkg.tar.zst"
+            "zstd not found - fpm's pacman backend needs it for --zstd "
+            "(apt install zstd / pacman -S zstd) to build the .pkg.tar.zst"
         )
 
     _stage_unix_root(pkg_dir)
