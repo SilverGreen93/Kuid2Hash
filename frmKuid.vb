@@ -1,6 +1,9 @@
-﻿Imports System.Globalization
+﻿Imports System.Diagnostics
+Imports System.Drawing
+Imports System.Globalization
+Imports System.Windows.Forms
 
-Public Class frmKuid
+Public Partial Class frmKuid
 
     ''' <summary>
     ''' Translates hexadecimal kuids to string
@@ -213,7 +216,7 @@ Public Class frmKuid
     End Sub
 
     Private Sub LinkLabel1_LinkClicked(sender As Object, e As LinkLabelLinkClickedEventArgs) Handles LinkLabel1.LinkClicked
-        Process.Start("https://github.com/SilverGreen93/Kuid2Hash")
+        Process.Start(New ProcessStartInfo("https://github.com/SilverGreen93/Kuid2Hash") With { .UseShellExecute = True })
     End Sub
 
     Private Sub TextBox3_TextChanged(sender As Object, e As EventArgs) Handles txtHex.TextChanged
