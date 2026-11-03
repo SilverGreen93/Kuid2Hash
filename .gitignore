@@ -246,3 +246,18 @@ ModelManifest.xml
 
 #VSCode
 .vscode/
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.venv/
+
+# PyInstaller output
+build/*
+!build/.gitkeep
+dist/
+
+# keep assets tracked (icon, screenshot)
+!assets/**
