@@ -48,6 +48,7 @@ def have(prog: str) -> bool:
 
 def _pyinstaller(name: str, extra: list[str]) -> None:
     icon = ["--icon", str(ICON_ICO)] if ICON_ICO.is_file() else []
+    hooks_dir = ["--additional-hooks-dir", str(ROOT / "hooks")] if (ROOT / "hooks").is_dir() else []
     run([
         sys.executable, "-m", "PyInstaller",
         "--noconfirm", "--clean",
@@ -56,6 +57,7 @@ def _pyinstaller(name: str, extra: list[str]) -> None:
         "--workpath", str(ROOT / "build"),
         "--specpath", str(ROOT / "build"),
         *icon,
+        *hooks_dir,
         *extra,
         str(ENTRY),
     ])
@@ -63,6 +65,30 @@ def _pyinstaller(name: str, extra: list[str]) -> None:
 
 def hidden_imports() -> list[str]:
     return ["--hidden-import", "kuid2hash.gui"]
+
+
+# Qt modules we don't use (widgets-only app). Excluding them prevents
+# PyInstaller from bundling Qt6Qml, Qt6Quick, Qt6QuickControls2*, Qt6Designer,
+# Qt6LabsStyleKit, Qt6Network + OpenSSL, etc. (~30 MB on Windows).
+_EXCLUDED_QT = [
+    "PySide6.QtQml",
+    "PySide6.QtQuick",
+    "PySide6.QtQuickControls2",
+    "PySide6.QtQuickDialogs2",
+    "PySide6.QtQuickWidgets",
+    "PySide6.QtDesigner",
+    "PySide6.QtLabsStyleKit",
+    "PySide6.QtQmlWorkerScript",
+    "PySide6.QtQuickTemplates2",
+    "PySide6.QtNetwork",
+]
+
+
+def _excludes() -> list[str]:
+    flags: list[str] = []
+    for mod in _EXCLUDED_QT:
+        flags += ["--exclude-module", mod]
+    return flags
 
 
 # --------------------------------------------------------------------------
@@ -74,7 +100,7 @@ def build_exe() -> Path:
     # without arguments and prints to stdout in CLI mode. A windowed (GUI
     # subsystem) exe detaches stdout, which would break CLI use; the console
     # build keeps both working.
-    _pyinstaller(APP_NAME, ["--onefile", *hidden_imports()])
+    _pyinstaller(APP_NAME, ["--onefile", *hidden_imports(), *_excludes()])
     exe = DIST / f"{APP_NAME}.exe"
     if not exe.is_file():
         raise SystemExit(f"PyInstaller did not produce {exe}")
