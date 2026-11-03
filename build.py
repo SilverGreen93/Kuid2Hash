@@ -96,11 +96,10 @@ def _excludes() -> list[str]:
 # --------------------------------------------------------------------------
 
 def build_exe() -> Path:
-    # NOTE: no --windowed here. The app is a hybrid: it shows the GUI when run
-    # without arguments and prints to stdout in CLI mode. A windowed (GUI
-    # subsystem) exe detaches stdout, which would break CLI use; the console
-    # build keeps both working.
-    _pyinstaller(APP_NAME, ["--onefile", *hidden_imports(), *_excludes()])
+    # --windowed (GUI subsystem) so double-clicking the exe opens the GUI
+    # without a terminal flash.  In CLI mode the entry point (kuid2hash_entry.py)
+    # re-attaches stdout/stderr via Win32 AttachConsole before printing.
+    _pyinstaller(APP_NAME, ["--onefile", "--windowed", *hidden_imports(), *_excludes()])
     exe = DIST / f"{APP_NAME}.exe"
     if not exe.is_file():
         raise SystemExit(f"PyInstaller did not produce {exe}")
