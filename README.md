@@ -16,14 +16,18 @@ See more about the KUID Format Specification here: [KUID Format Specification](h
 
 ## Usage
 
-The app runs as a GUI when started without arguments, and as a command line tool when arguments are given.
+The app runs as a GUI when started without arguments, and as a command line tool when arguments are given. From the repository root, run it without installing the package by adding `src` to Python's module search path:
 
-Run it directly from the source tree (no packaging needed), after [installing it in editable mode](#building-from-source):
+```powershell
+# Windows PowerShell
+$env:PYTHONPATH = "src"
+python -m kuid2hash.cli      # starts the GUI
+python -m kuid2hash.cli "kuid 68787 1097"  # runs in CLI mode
+```
 
-```
-kuid2hash                    # starts the GUI
-python -m kuid2hash.cli      # same thing without installing the script entry point
-```
+On macOS or Linux, prefix the command with `PYTHONPATH=src`, for example `PYTHONPATH=src python -m kuid2hash.cli`.
+
+The `kuid2hash` command is created by installing the package (for example, with `python -m pip install -e ".[gui]"`); it is not available from a fresh source checkout. The GUI requires the optional PySide6 dependency, which is included in the `gui` extra above.
 
 CLI examples:
 
@@ -48,7 +52,7 @@ Requires Python 3.10+.
 ```
 python -m venv .venv
 .venv\Scripts\pip install -e ".[gui,test]"     # Windows (use bin/activate on unix)
-pytest                                          # run the tests
+pytest                                         # run the tests
 ```
 
 ## Packaging

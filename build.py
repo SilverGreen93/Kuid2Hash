@@ -25,7 +25,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+import zipfile
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent
 APP_NAME = "Kuid2Hash"
@@ -111,58 +112,146 @@ def build_dmg() -> Path:
 # Linux: .deb and .pkg.tar.zst via fpm (fallbacks below)
 # --------------------------------------------------------------------------
 
+def _site_packages_dir() -> Path:
+    """Distro-neutral site dir under /usr reported by the running interpreter.
+
+    On Debian/Ubuntu this is /usr/lib/python3/dist-packages (deb_system
+    scheme), on Arch and most others /usr/lib/python3.X/site-packages.
+    Both are on sys.path by default.
+    """
+    import sysconfig
+
+    # Try distro-specific schemes in order of preference
+    for scheme in ("deb_system", "posix_local"):
+        try:
+            path = sysconfig.get_path(
+                "purelib", scheme=scheme,
+                vars={"base": "/usr", "platbase": "/usr"},
+            )
+            return Path(path)
+        except (KeyError, Exception):
+            continue
+    # Fallback: derive from the default purelib, stripping the prefix
+    # (e.g. /usr/local/lib/python3.X/dist-packages -> /usr/lib/python3.X/dist-packages)
+    purelib = Path(sysconfig.get_path("purelib"))
+    parts = purelib.parts
+    # Find the "lib" component and rebuild under /usr
+    if "lib" in parts:
+        idx = parts.index("lib")
+        return Path("/usr") / Path(*parts[idx:])
+    return Path("/usr/lib") / purelib.name
+
+
 def _install_tree(prefix: Path) -> None:
-    """Install the app into a prefix using pip, for packaging."""
-    run([sys.executable, "-m", "pip", "install", "--prefix", str(prefix),
-         "--no-deps", str(ROOT)])
+    """Install the app into a prefix for packaging.
+
+    Builds a wheel with pip, then extracts the package files into the
+    interpreter's site-packages dir under /usr. This is distro-neutral:
+    on Debian that is /usr/lib/python3/dist-packages, on Arch and most
+    others /usr/lib/python3.X/site-packages - both on sys.path by default.
+    """
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        run([sys.executable, "-m", "pip", "wheel", "--no-deps",
+             "--wheel-dir", str(tmp), str(ROOT)])
+        wheels = list(tmp.glob("*.whl"))
+        if not wheels:
+            raise RuntimeError("pip wheel produced no wheel file")
+
+        # prefix already ends with /usr, so strip the leading /usr from the site dir
+        site_dir = _site_packages_dir()
+        parts = site_dir.parts  # e.g. ('/', 'usr', 'lib', 'python3', 'dist-packages')
+        # drop the leading '/' and 'usr'
+        rel = Path(*parts[2:]) if parts[:2] == ('/', 'usr') else Path(*parts[1:])
+        target = prefix / rel
+        target.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(wheels[0]) as zf:
+            for name in zf.namelist():
+                parts = PurePosixPath(name).parts
+                # no path traversal; skip directories and root-level files
+                if not parts or ".." in parts or len(parts) < 2 or name.endswith("/"):
+                    continue
+                # skip dist-info / data metadata, keep only the package itself
+                if parts[0].endswith((".dist-info", ".data")):
+                    continue
+                dest = target.joinpath(*parts)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                with zf.open(name) as src, open(dest, "wb") as out:
+                    shutil.copyfileobj(src, out)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def build_deb() -> Path:
     arch = {"x86_64": "amd64", "aarch64": "arm64"}.get(platform.machine(), "amd64")
     pkg_dir = DIST / f"{APP_NAME}-{VERSION}-linux-{arch}"
 
-    if have("fpm"):
-        _stage_unix_root(pkg_dir)
-        run(["fpm", "-s", "dir", "-t", "deb",
-             "-n", "kuid2hash", "--version", VERSION,
-             "--architecture", arch,
-             "--description", "Trainz KUID to hex/hash converter (GUI + CLI)",
-             "--depends", "python3",
-             "--maintainer", "SilverGreen93",
-             "--license", "GPL-2.0-or-later",
-             "-C", str(pkg_dir),
-             "./usr=/usr"])
-        deb = DIST / f"kuid2hash_{VERSION}_{arch}.deb"
-        produced = sorted(DIST.glob(f"kuid2hash_*_{arch}.deb"))
-        if produced:
-            src = produced[-1]
-            if src.resolve() != deb.resolve():
-                shutil.move(str(src), deb)
-            return deb
+    if not have("fpm"):
+        raise RuntimeError(
+            "fpm not found - install it (gem install fpm or apt install fpm) "
+            "to build the .deb"
+        )
 
-    raise SystemExit("fpm not found - install it (gem install fpm or apt install fpm) to build the .deb")
+    _stage_unix_root(pkg_dir)
+    # fpm refuses to overwrite an existing package file, so remove any stale
+    # artifact first; give it the full output path via -p so nothing lands in
+    # the source tree.
+    deb = DIST / f"kuid2hash_{VERSION}_{arch}.deb"
+    deb.unlink(missing_ok=True)
+    run(["fpm", "-s", "dir", "-t", "deb",
+         "-n", "kuid2hash", "--version", VERSION,
+         "--architecture", arch,
+         "--description", "Trainz KUID to hex/hash converter (GUI + CLI)",
+         "--depends", "python3",
+         "--maintainer", "SilverGreen93 <noreply@github.com>",
+         "--license", "GPL-2.0-or-later",
+         "-p", str(deb),
+         # remap the staging root's ./usr to /usr inside the package; fpm is
+         # finicky about "./usr" with a leading dot, plain "usr" works
+         "-C", str(pkg_dir),
+         "usr=/"])
+
+    if not deb.is_file():
+        raise RuntimeError("fpm did not produce a .deb file")
+    return deb
 
 
 def build_zst() -> Path:
     arch = platform.machine()  # x86_64 / aarch64
     pkg_dir = DIST / f"{APP_NAME}-{VERSION}-linux-{arch}"
 
-    if have("fpm"):
-        _stage_unix_root(pkg_dir)
-        run(["fpm", "-s", "dir", "-t", "pacman",
-             "-n", "kuid2hash", "--version", VERSION,
-             "--architecture", arch,
-             "--description", "Trainz KUID to hex/hash converter (GUI + CLI)",
-             "--depends", "python3",
-             "--maintainer", "SilverGreen93 <noreply@github.com>",
-             "--license", "GPL-2.0-or-later",
-             "-C", str(pkg_dir),
-             "./usr=/usr"])
-        produced = sorted(DIST.glob(f"kuid2hash-{VERSION}-*.pkg.tar.zst"))
-        if produced:
-            return produced[-1]
+    if not have("fpm"):
+        raise RuntimeError(
+            "fpm not found - install it (gem install fpm) to build the "
+            ".pkg.tar.zst"
+        )
+    if not have("bsdtar"):
+        raise RuntimeError(
+            "bsdtar not found - install it (apt install libarchive-tools) to "
+            "build the .pkg.tar.zst"
+        )
 
-    raise SystemExit("fpm not found - install it (gem install fpm or pacman -S ruby-fpm) to build the .pkg.tar.zst")
+    _stage_unix_root(pkg_dir)
+    # full output path via -p, see build_deb; bsdtar is required by fpm's
+    # pacman backend to generate the MTREE
+    out = DIST / f"kuid2hash-{VERSION}-{arch}.pkg.tar.zst"
+    out.unlink(missing_ok=True)
+    run(["fpm", "-s", "dir", "-t", "pacman",
+         "-n", "kuid2hash", "--version", VERSION,
+         "--architecture", arch,
+         "--description", "Trainz KUID to hex/hash converter (GUI + CLI)",
+         "--depends", "python3",
+         "--maintainer", "SilverGreen93 <noreply@github.com>",
+         "--license", "GPL-2.0-or-later",
+         "-p", str(out),
+         # remap the staging root's ./usr to /usr inside the package; fpm is
+         # finicky about "./usr" with a leading dot, plain "usr" works
+         "-C", str(pkg_dir),
+         "usr=/"])
+
+    if not out.is_file():
+        raise RuntimeError("fpm did not produce a .pkg.tar.zst file")
+    return out
 
 
 def _stage_unix_root(pkg_dir: Path) -> None:
@@ -175,11 +264,13 @@ def _stage_unix_root(pkg_dir: Path) -> None:
     if pkg_dir.exists():
         shutil.rmtree(pkg_dir)
     prefix = pkg_dir
-    _install_tree(prefix)
 
-    # pip --prefix also drops a bin/ at the prefix root; remove those windows
-    # scripts, we ship our own wrapper below
+    _install_tree(prefix / "usr")
+
+    # pip --prefix also drops bin/Scripts script stubs; remove them (they are
+    # tied to the build interpreter), we ship our own wrapper below
     for junk in ("bin", "Scripts"):
+        shutil.rmtree(prefix / "usr" / junk, ignore_errors=True)
         shutil.rmtree(prefix / junk, ignore_errors=True)
 
     # wrap the console script so PATH works without activating anything
@@ -243,11 +334,13 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001
             print(f"[error] {desc}: {exc}", file=sys.stderr)
 
-    if built:
-        print("\nArtifacts:")
-        for artifact in built:
-            print(" ", artifact)
-    return 0 if built or args.only is None else 1
+    if not built:
+        return 1
+
+    print("\nArtifacts:")
+    for artifact in built:
+        print(" ", artifact)
+    return 0
 
 
 if __name__ == "__main__":
