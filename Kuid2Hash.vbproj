@@ -10,6 +10,9 @@
     <ApplicationIcon>Chromatix-Keyboard-Keys-Hash.ico</ApplicationIcon>
     <StartupObject>Sub Main</StartupObject>
 
+    <!-- CLI build: console-subsystem exe so Console.Out works reliably in a terminal.
+         Build with: dotnet build -p:BuildCli=true  (produces Kuid2HashCli.exe alongside the GUI exe) -->
+
     <!-- Assembly metadata (moved from My Project\AssemblyInfo.vb) -->
     <Version>2.0.0.0</Version>
     <FileVersion>2.0.0.0</FileVersion>
@@ -18,6 +21,17 @@
     <Title>Kuid2Hash</Title>
     <Description>Utility for converting numeric kuids to hexadecimal values.</Description>
     <Copyright>Copyright © SilverGreen93 2026</Copyright>
+  </PropertyGroup>
+
+  <!-- CLI build: produce a console-subsystem exe (Kuid2HashCli.exe) for reliable terminal output,
+       emitted to its own folder so it does not clobber the GUI Kuid2Hash.exe.
+       Usage: dotnet build Kuid2Hash.sln -c Debug -p:BuildCli=true
+       Output: bin\Debug\net10.0-windows\cli\Kuid2HashCli.exe -->
+  <PropertyGroup Condition="'$(BuildCli)' == 'true'">
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Kuid2HashCli</AssemblyName>
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
+    <OutDir>bin\$(Configuration)\net10.0-windows\cli\</OutDir>
   </PropertyGroup>
 
   <ItemGroup>

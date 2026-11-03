@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Kuid2Hash.Tests
 {
     /// <summary>
-    /// Validates the kuid conversions of frmKuid against a small CSV data set.
+    /// Validates the kuid conversions of KuidConverter against a small CSV data set.
     /// For every row both conversion directions are checked (string -> bytes and
     /// bytes -> string) as well as the hash, which must be identical no matter
     /// which direction produced the byte array.
@@ -82,7 +82,7 @@ namespace Kuid2Hash.Tests
             };
             foreach (var (strKuid, expectedBin) in cases)
             {
-                var actual = frmKuid.KuidToHex(strKuid);
+                var actual = KuidConverter.KuidToHex(strKuid);
                 CollectionAssert.AreEqual(expectedBin.Split(' '), ToHex(actual).Split(' '),
                     $"KuidToHex(\"{strKuid}\") should be \"{expectedBin}\"");
             }
@@ -111,12 +111,12 @@ namespace Kuid2Hash.Tests
                 var bytes = ParseHex(bin);
 
                 // direction: binary -> string (a uid -1 kuid is printed as "<kuid:-1:...>")
-                var strKuid = frmKuid.HexToKuid(bytes);
+                var strKuid = KuidConverter.HexToKuid(bytes);
                 Assert.IsTrue(strKuid.StartsWith("<kuid") && strKuid.EndsWith(">"),
                     $"HexToKuid(\"{bin}\") should return a bracketed kuid, got \"{strKuid}\"");
 
                 // direction: string -> binary again must give exactly the same bytes back
-                var roundTripped = frmKuid.KuidToHex(strKuid);
+                var roundTripped = KuidConverter.KuidToHex(strKuid);
                 CollectionAssert.AreEqual(bytes, roundTripped,
                     $"Round trip of \"{bin}\" via \"{strKuid}\" should return the original bytes");
             }
@@ -142,7 +142,7 @@ namespace Kuid2Hash.Tests
             };
             foreach (var (strKuid, bin, expectedHash) in cases)
             {
-                var fromString = frmKuid.KuidToHex(strKuid);
+                var fromString = KuidConverter.KuidToHex(strKuid);
                 var fromBinary = ParseHex(bin);
 
                 // both directions must produce the same byte array ...
@@ -151,9 +151,9 @@ namespace Kuid2Hash.Tests
 
                 // ... so the hash is identical either way and matches the CSV value
                 var expected = byte.Parse(expectedHash, NumberStyles.HexNumber);
-                Assert.AreEqual(expected, frmKuid.ComputeHash(fromString),
+                Assert.AreEqual(expected, KuidConverter.ComputeHash(fromString),
                     $"computeHash(\"{strKuid}\") should be 0x{expected:X2}");
-                Assert.AreEqual(expected, frmKuid.ComputeHash(fromBinary),
+                Assert.AreEqual(expected, KuidConverter.ComputeHash(fromBinary),
                     $"computeHash(\"{bin}\") should be 0x{expected:X2}");
             }
         }
@@ -171,19 +171,19 @@ namespace Kuid2Hash.Tests
             foreach (var row in rows)
             {
                 // direction 1: string -> binary must equal the CSV column
-                var fromString = frmKuid.KuidToHex(row.StrKuid);
+                var fromString = KuidConverter.KuidToHex(row.StrKuid);
                 CollectionAssert.AreEqual(row.BinKuid, fromString,
                     $"Row \"{row.StrKuid}\": KuidToHex should return {ToHex(row.BinKuid)}");
 
                 // direction 2: binary -> string must round-trip back to the same bytes
-                var str = frmKuid.HexToKuid(row.BinKuid);
-                CollectionAssert.AreEqual(row.BinKuid, frmKuid.KuidToHex(str),
+                var str = KuidConverter.HexToKuid(row.BinKuid);
+                CollectionAssert.AreEqual(row.BinKuid, KuidConverter.KuidToHex(str),
                     $"Row \"{row.StrKuid}\": HexToKuid returned \"{str}\" which does not parse back to {ToHex(row.BinKuid)}");
 
                 // hash must be correct from both directions
-                Assert.AreEqual(row.Hash, frmKuid.ComputeHash(fromString),
+                Assert.AreEqual(row.Hash, KuidConverter.ComputeHash(fromString),
                     $"Row \"{row.StrKuid}\": hash of string-derived bytes should be 0x{row.Hash:X2}");
-                Assert.AreEqual(row.Hash, frmKuid.ComputeHash(row.BinKuid),
+                Assert.AreEqual(row.Hash, KuidConverter.ComputeHash(row.BinKuid),
                     $"Row \"{row.StrKuid}\": hash of binary-derived bytes should be 0x{row.Hash:X2}");
             }
         }
@@ -195,11 +195,11 @@ namespace Kuid2Hash.Tests
         [TestMethod]
         public void UidMinusOne_IsPrintedWithUserPart()
         {
-            var str = frmKuid.HexToKuid(ParseHex("39 02 00 00"));
+            var str = KuidConverter.HexToKuid(ParseHex("39 02 00 00"));
             Assert.AreEqual("<kuid:-1:569>", str);
 
             // the full 8 byte form must print identically (FF FF FF FF user part)
-            var strFull = frmKuid.HexToKuid(ParseHex("FF FF FF FF 39 02 00 00"));
+            var strFull = KuidConverter.HexToKuid(ParseHex("FF FF FF FF 39 02 00 00"));
             Assert.AreEqual(str, strFull);
         }
     }
