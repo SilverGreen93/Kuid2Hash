@@ -1,8 +1,9 @@
-"""Custom PyInstaller hook for PySide6.
+"""Custom PyInstaller hook for PySide6 (GUI build only).
 
 Replaces the stock hook to skip collecting opengl32sw.dll (19.7 MB
 software GL fallback) and ANGLE DLLs, which are not needed for a
-Qt Widgets-only application.
+Qt Widgets-only application. The CLI exe is built with --exclude-module
+PySide6/shiboken6 instead, so this hook never runs there.
 """
 import os
 

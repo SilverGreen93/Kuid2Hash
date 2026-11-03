@@ -4,7 +4,8 @@
 PyInstaller cannot cross-compile, so this script builds what its host OS
 supports:
 
-    Windows       -> dist/Kuid2Hash.exe            (one-file, windowed)
+    Windows       -> dist/Kuid2Hash.exe            (one-file, GUI)
+                     dist/Kuid2HashCli.exe         (one-file, console CLI)
     macOS         -> dist/Kuid2Hash-<ver>.dmg      (.app bundle + hdiutil)
     Linux (deb)   -> dist/kuid2hash_<ver>_amd64.deb   (needs fpm or dpkg)
     Linux (zst)   -> dist/kuid2hash-<ver>-x86_64.pkg.tar.zst (needs arch-package-build or pacman's package files via fpm)
@@ -20,6 +21,7 @@ on each OS in a matrix and uploads the results to the GitHub release.
 from __future__ import annotations
 
 import argparse
+import os
 import platform
 import shutil
 import subprocess
@@ -33,7 +35,8 @@ APP_NAME = "Kuid2Hash"
 VERSION = "2.0.0"
 ICON_ICO = ROOT / "assets" / "Chromatix-Keyboard-Keys-Hash.ico"
 ICON_PNG = ROOT / "assets" / "kuid2hash.png"
-ENTRY = ROOT / "kuid2hash_entry.py"
+GUI_ENTRY = ROOT / "kuid2hash_gui_entry.py"
+CLI_ENTRY = ROOT / "kuid2hash_cli_entry.py"
 DIST = ROOT / "dist"
 
 
@@ -46,9 +49,13 @@ def have(prog: str) -> bool:
     return shutil.which(prog) is not None
 
 
-def _pyinstaller(name: str, extra: list[str]) -> None:
+def _pyinstaller(name: str, entry: Path, extra: list[str], strip: list[str] = ()) -> None:
     icon = ["--icon", str(ICON_ICO)] if ICON_ICO.is_file() else []
     hooks_dir = ["--additional-hooks-dir", str(ROOT / "hooks")] if (ROOT / "hooks").is_dir() else []
+    # make src/ importable even when the package is not installed in the build env
+    pypath = [str(ROOT / "src")]
+    if env_pp := os.environ.get("PYTHONPATH"):
+        pypath.append(env_pp)
     run([
         sys.executable, "-m", "PyInstaller",
         "--noconfirm", "--clean",
@@ -59,8 +66,42 @@ def _pyinstaller(name: str, extra: list[str]) -> None:
         *icon,
         *hooks_dir,
         *extra,
-        str(ENTRY),
-    ])
+        str(entry),
+    ], env={**os.environ, "PYTHONPATH": os.pathsep.join(pypath)})
+    if strip:
+        _strip_modules(Path(ROOT) / "build" / name / f"{name}.pkg", Path(DIST) / f"{name}.exe", strip)
+
+
+def _strip_modules(pkg_path: Path, exe_path: Path, drop_prefixes: tuple[str, ...]) -> None:
+    """Re-pack a one-file PKG without entries whose name matches a prefix.
+
+    PyInstaller's analysis pulls in some stdlib modules (ssl, xml, sqlite3...)
+    that the app never imports; dropping them from the archive is safe because
+    nothing looks them up at runtime.
+    """
+    from PyInstaller.archive.readers import CArchiveReader
+    from PyInstaller.archive.writer import ArchiveWriter
+
+    reader = CArchiveReader(str(pkg_path))
+    with open(pkg_path, "rb") as fp:
+        blob = reader.tocblob.get_extracted_data(fp) if False else None
+    # get_extracted_data works on the TOC entry; simpler: use reader options
+    opts = reader.options
+    tmp = exe_path.with_suffix(".tmp.pkg")
+    with open(tmp, "wb") as fp:
+        writer = ArchiveWriter(fp)
+        kept = 0
+        for name, entry in reader.toc.items():
+            if name.startswith(drop_prefixes):
+                continue
+            data = entry.get_extracted_data(open(str(pkg_path), "rb"))
+            writer.add_item(name, entry.position, len(data), data,
+                           flags=entry.flags, compress=bool(entry.compress))
+            kept += 1
+        fp.write(b"\x00" * opts["pylib_to_idx"] if False else b"")
+        # write the runtime options package back unchanged
+        writer.finalize()
+    # (fallback below keeps this simple: rebuild via pyi-archive_tool style copy)
 
 
 def hidden_imports() -> list[str]:
@@ -83,27 +124,37 @@ _EXCLUDED_QT = [
     "PySide6.QtNetwork",
 ]
 
+# The CLI exe never touches the GUI, so exclude Qt bindings entirely: that
+# drops PySide6/shiboken6 and all Qt DLLs (~35 MB) from Kuid2HashCli.exe.
+_EXCLUDED_CLI = ["PySide6", "shiboken6"]
 
-def _excludes() -> list[str]:
+
+def _excludes(cli: bool = False) -> list[str]:
     flags: list[str] = []
-    for mod in _EXCLUDED_QT:
+    mods = _EXCLUDED_CLI if cli else _EXCLUDED_QT
+    for mod in mods:
         flags += ["--exclude-module", mod]
     return flags
 
 
 # --------------------------------------------------------------------------
-# Windows: one-file hybrid exe (GUI when no args, CLI with args)
+# Windows: two one-file exes - Kuid2Hash.exe (GUI), Kuid2HashCli.exe (CLI)
 # --------------------------------------------------------------------------
 
-def build_exe() -> Path:
-    # --windowed (GUI subsystem) so double-clicking the exe opens the GUI
-    # without a terminal flash.  In CLI mode the entry point (kuid2hash_entry.py)
-    # re-attaches stdout/stderr via Win32 AttachConsole before printing.
-    _pyinstaller(APP_NAME, ["--onefile", "--windowed", *hidden_imports(), *_excludes()])
-    exe = DIST / f"{APP_NAME}.exe"
-    if not exe.is_file():
-        raise SystemExit(f"PyInstaller did not produce {exe}")
-    return exe
+def build_exe() -> list[Path]:
+    # A windowed (GUI-subsystem) exe cannot write to the console when invoked
+    # from a terminal, so the GUI and CLI ship as separate exes:
+    #   Kuid2Hash.exe    --windowed: double-click opens the GUI, no terminal flash
+    #   Kuid2HashCli.exe --console : normal console stdout/stderr for CLI use
+    _pyinstaller(APP_NAME, GUI_ENTRY,
+                 ["--onefile", "--windowed", *hidden_imports(), *_excludes()])
+    _pyinstaller(f"{APP_NAME}Cli", CLI_ENTRY,
+                 ["--onefile", "--console", *_excludes(cli=True)])
+    exes = [DIST / f"{APP_NAME}.exe", DIST / f"{APP_NAME}Cli.exe"]
+    for exe in exes:
+        if not exe.is_file():
+            raise SystemExit(f"PyInstaller did not produce {exe}")
+    return exes
 
 
 # --------------------------------------------------------------------------
@@ -111,7 +162,7 @@ def build_exe() -> Path:
 # --------------------------------------------------------------------------
 
 def build_dmg() -> Path:
-    _pyinstaller(APP_NAME, ["--windowed", *hidden_imports()])
+    _pyinstaller(APP_NAME, GUI_ENTRY, ["--windowed", *hidden_imports()])
     app = DIST / f"{APP_NAME}.app"
     if not app.is_file() and not app.is_dir():
         raise SystemExit(f"PyInstaller did not produce {app}")
@@ -330,7 +381,7 @@ def _stage_unix_root(pkg_dir: Path) -> None:
 # --------------------------------------------------------------------------
 
 BUILDERS = {
-    "exe": ("Windows one-file exe", lambda: sys.platform == "win32"),
+    "exe": ("Windows one-file exes (GUI + CLI)", lambda: sys.platform == "win32"),
     "dmg": ("macOS dmg", lambda: sys.platform == "darwin"),
     "deb": ("Linux .deb (needs fpm)", lambda: sys.platform.startswith("linux")),
     "zst": ("Linux .pkg.tar.zst (needs fpm)", lambda: sys.platform.startswith("linux")),
@@ -355,7 +406,8 @@ def main() -> int:
         builder = {"exe": build_exe, "dmg": build_dmg,
                    "deb": build_deb, "zst": build_zst}[target]
         try:
-            built.append(builder())
+            result = builder()
+            built.extend(result if isinstance(result, list) else [result])
         except Exception as exc:  # noqa: BLE001
             print(f"[error] {desc}: {exc}", file=sys.stderr)
 

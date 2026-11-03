@@ -21,7 +21,7 @@ The app runs as a GUI when started without arguments, and as a command line tool
 ```powershell
 # Windows PowerShell
 $env:PYTHONPATH = "src"
-python -m kuid2hash.cli      # starts the GUI
+python -m kuid2hash.gui                    # starts the GUI
 python -m kuid2hash.cli "kuid 68787 1097"  # runs in CLI mode
 ```
 
@@ -61,7 +61,7 @@ pytest                                         # run the tests
 
 | Platform | Artifact | Requirement |
 |----------|----------|-------------|
-| Windows  | `dist/Kuid2Hash.exe` (one-file, GUI + CLI) | `pip install ".[gui,build]"` |
+| Windows  | `dist/Kuid2Hash.exe` (GUI) and `dist/Kuid2HashCli.exe` (CLI), both one-file | `pip install ".[gui,build]"` |
 | macOS    | `dist/Kuid2Hash-<ver>-macos.dmg` | `pip install ".[gui,build]"` |
 | Linux    | `dist/kuid2hash_<ver>_amd64.deb` and `.pkg.tar.zst` | `gem install fpm` |
 
@@ -70,7 +70,9 @@ python build.py                 # build everything this host supports
 python build.py --only exe      # build a single artifact
 ```
 
-PyInstaller cannot cross-compile, so each artifact must be built on its target OS. The GitHub Actions workflow in `.github/workflows/release.yml` builds all four packages (Windows exe, macOS dmg, Linux deb and zst) automatically on every `v*` tag and attaches them to the release.
+PyInstaller cannot cross-compile, so each artifact must be built on its target OS. The GitHub Actions workflow in `.github/workflows/release.yml` builds all four packages (Windows exes, macOS dmg, Linux deb and zst) automatically on every `v*` tag and attaches them to the release.
+
+On Windows the GUI and CLI ship as separate executables: a windowed exe cannot write to the console when invoked from a terminal with arguments, so `Kuid2Hash.exe` is the GUI and `Kuid2HashCli.exe` is the command line tool.
 
 ## System requirements
 
