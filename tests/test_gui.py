@@ -1,4 +1,4 @@
-"""Smoke tests for the PySide6 GUI (offscreen).
+"""Smoke tests for the PyQt6 GUI (offscreen).
 
 Skipped automatically when no Qt binding is installed. These verify the same
 behaviour as the WinForms original: two-way live conversion driven only by the
@@ -12,9 +12,9 @@ import pytest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-pytest.importorskip("PySide6.QtWidgets")
+pytest.importorskip("PyQt6.QtWidgets")
 
-from PySide6.QtWidgets import QApplication  # noqa: E402
+from PyQt6.QtWidgets import QApplication  # noqa: E402
 
 from kuid2hash.gui import KuidWindow  # noqa: E402
 

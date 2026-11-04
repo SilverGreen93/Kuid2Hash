@@ -27,7 +27,7 @@ python -m kuid2hash.cli "kuid 68787 1097"  # runs in CLI mode
 
 On macOS or Linux, prefix the command with `PYTHONPATH=src`, for example `PYTHONPATH=src python -m kuid2hash.cli`.
 
-The `kuid2hash` command is created by installing the package (for example, with `python -m pip install -e ".[gui]"`); it is not available from a fresh source checkout. The GUI requires the optional PySide6 dependency, which is included in the `gui` extra above.
+The `kuid2hash` command is created by installing the package (for example, with `python -m pip install -e ".[gui]"`); it is not available from a fresh source checkout. The GUI requires the optional PyQt6 dependency, which is included in the `gui` extra above.
 
 CLI examples:
 
@@ -77,7 +77,7 @@ On Windows the GUI and CLI ship as separate executables: a windowed exe cannot w
 ## System requirements
 
 - Windows 10 or newer, macOS 12+ (Apple Silicon/Intel), or any recent Linux with Python 3.10+
-- The GUI packages bundle PySide6 (Qt 6); the deb/zst packages depend on the system Python and expect `PySide6` to be installed for GUI use (`pip install PySide6-Essentials`)
+- The GUI packages bundle PyQt6 (Qt 6); the deb/zst packages use the system Python and pull in its PyQt6 binding (`python3-pyqt6` on Debian/Ubuntu, `python-pyqt6` on Arch)
 
 ## Related Trainz tools
 

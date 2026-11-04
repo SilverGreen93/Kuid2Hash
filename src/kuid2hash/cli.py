@@ -22,7 +22,19 @@ def main(argv: list[str] | None = None) -> int:
         argv = sys.argv[1:]
 
     if not argv:
-        from .gui import run_gui
+        try:
+            from .gui import run_gui
+        except ImportError:
+            # distro packages ship the CLI as pure Python and expect the
+            # system python to provide PyQt6; it may genuinely be missing
+            print(
+                "Error: the GUI needs PyQt6, which is not installed.\n"
+                "Install it (pip install \"kuid2hash[gui]\", or your distro's\n"
+                "python3-pyqt6 / python-pyqt6 package), or convert\n"
+                "from the terminal: kuid2hash \"kuid 68787 1097\"",
+                file=sys.stderr,
+            )
+            return 1
 
         return run_gui()
 

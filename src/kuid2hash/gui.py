@@ -1,4 +1,4 @@
-"""PySide6 GUI for Kuid2Hash.
+"""PyQt6 GUI for Kuid2Hash.
 
 Port of frmKuid (WinForms): two-way live conversion between the KUID string
 and its hex bytes, plus the hash and a "Reverse kuid" checkbox. Only the
@@ -11,9 +11,9 @@ from __future__ import annotations
 import sys
 import webbrowser
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QFontMetrics, QIcon
-from PySide6.QtWidgets import (
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QFontMetrics, QIcon
+from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
     QGridLayout,

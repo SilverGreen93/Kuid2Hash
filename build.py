@@ -178,23 +178,21 @@ def version_file(name: str, description: str) -> list[str]:
 
 # Qt modules we don't use (widgets-only app). Excluding them prevents
 # PyInstaller from bundling Qt6Qml, Qt6Quick, Qt6QuickControls2*, Qt6Designer,
-# Qt6LabsStyleKit, Qt6Network + OpenSSL, etc. (~30 MB on Windows).
+# Qt6Network + OpenSSL, etc. (~30 MB on Windows).
 _EXCLUDED_QT = [
-    "PySide6.QtQml",
-    "PySide6.QtQuick",
-    "PySide6.QtQuickControls2",
-    "PySide6.QtQuickDialogs2",
-    "PySide6.QtQuickWidgets",
-    "PySide6.QtDesigner",
-    "PySide6.QtLabsStyleKit",
-    "PySide6.QtQmlWorkerScript",
-    "PySide6.QtQuickTemplates2",
-    "PySide6.QtNetwork",
+    "PyQt6.QtQml",
+    "PyQt6.QtQuick",
+    "PyQt6.QtQuickControls2",
+    "PyQt6.QtQuickWidgets",
+    "PyQt6.QtDesigner",
+    "PyQt6.QtTest",
+    "PyQt6.QtNetwork",
 ]
 
 # The CLI exe never touches the GUI, so exclude Qt bindings entirely: that
-# drops PySide6/shiboken6 and all Qt DLLs (~35 MB) from Kuid2HashCli.exe.
-_EXCLUDED_CLI = ["PySide6", "shiboken6"]
+# drops PyQt6 (including its sip module) and all Qt DLLs (~35 MB) from
+# Kuid2HashCli.exe.
+_EXCLUDED_CLI = ["PyQt6"]
 
 
 def _excludes(cli: bool = False) -> list[str]:
@@ -358,6 +356,11 @@ def build_deb() -> Path:
          "--architecture", arch,
          "--description", "Trainz KUID to hex/hash converter (GUI + CLI)",
          "--depends", "python3",
+         # the no-arg GUI mode needs the Qt binding; unlike PySide6, PyQt6
+         # is packaged by every current distro, so the deb can depend on it
+         # directly (Ubuntu 24.04+, Debian, ...; 22.04 ships no Qt6 python
+         # bindings at all and its standard support ended in June 2026).
+         "--depends", "python3-pyqt6",
          "--maintainer", "SilverGreen93 <noreply@github.com>",
          "--license", "GPL-2.0-or-later",
          "-p", str(deb),
@@ -395,7 +398,8 @@ def build_zst() -> Path:
          "-n", "kuid2hash", "--version", VERSION,
          "--architecture", arch,
          "--description", "Trainz KUID to hex/hash converter (GUI + CLI)",
-         "--depends", "python3",
+         "--depends", "python3",  # Arch's 'python' package Provides: python3
+         "--depends", "python-pyqt6",  # Arch [extra] package for the binding
          "--maintainer", "SilverGreen93 <noreply@github.com>",
          "--license", "GPL-2.0-or-later",
          "-p", str(out),
@@ -412,7 +416,7 @@ def build_zst() -> Path:
 def _stage_unix_root(pkg_dir: Path) -> None:
     """Build a ./usr prefix tree with the app installed under it.
 
-    The app itself is pure Python; PySide6/Qt is expected from the system
+    The app itself is pure Python; PyQt6/Qt is expected from the system
     python (a dependency of the package), which keeps the packages small and
     avoids bundling Qt twice.
     """
