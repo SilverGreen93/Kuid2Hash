@@ -43,10 +43,21 @@ def _resource_path(name: str) -> str | None:
 
 APP_TITLE = "Kuid2Hash v2.0"
 GITHUB_URL = "https://github.com/SilverGreen93/Kuid2Hash"
+ICON_FILE = "Chromatix-Keyboard-Keys-Hash.ico"
 
 
 def _to_hex(data: bytes) -> str:
     return " ".join(f"{b:02X}" for b in data)
+
+
+def _window_icon() -> QIcon | None:
+    """The app icon, if it can be found next to the code or in the bundle.
+
+    Setting it on the application as well as the window is what puts it in the
+    Windows taskbar; --icon alone only stamps the exe file on disk.
+    """
+    path = _resource_path(ICON_FILE)
+    return QIcon(path) if path else None
 
 
 class KuidWindow(QWidget):
@@ -60,9 +71,9 @@ class KuidWindow(QWidget):
 
     def _build(self) -> None:
         self.setWindowTitle(APP_TITLE)
-        icon_path = _resource_path("Chromatix-Keyboard-Keys-Hash.ico")
-        if icon_path:
-            self.setWindowIcon(QIcon(icon_path))
+        icon = _window_icon()
+        if icon:
+            self.setWindowIcon(icon)
 
         bold = QFont()
         bold.setBold(True)
@@ -209,6 +220,9 @@ class KuidWindow(QWidget):
 def run_gui() -> int:
     """Launch the GUI. Returns the process exit code."""
     app = QApplication(sys.argv[:1])
+    icon = _window_icon()
+    if icon:
+        app.setWindowIcon(icon)
     window = KuidWindow()
     window.show()
     return app.exec()

@@ -108,6 +108,20 @@ def hidden_imports() -> list[str]:
     return ["--hidden-import", "kuid2hash.gui"]
 
 
+def bundled_assets() -> list[str]:
+    """Ship the icon inside the bundle so the GUI can set its window icon.
+
+    --icon only stamps the exe file itself; the running window (titlebar and
+    taskbar) reads the .ico through gui._resource_path(), which looks inside
+    sys._MEIPASS, so the file has to be bundled as data as well.
+    """
+    flags: list[str] = []
+    for asset in (ICON_ICO,):
+        if asset.is_file():
+            flags += ["--add-data", f"{asset}{os.pathsep}."]
+    return flags
+
+
 # Qt modules we don't use (widgets-only app). Excluding them prevents
 # PyInstaller from bundling Qt6Qml, Qt6Quick, Qt6QuickControls2*, Qt6Designer,
 # Qt6LabsStyleKit, Qt6Network + OpenSSL, etc. (~30 MB on Windows).
@@ -147,7 +161,8 @@ def build_exe() -> list[Path]:
     #   Kuid2Hash.exe    --windowed: double-click opens the GUI, no terminal flash
     #   Kuid2HashCli.exe --console : normal console stdout/stderr for CLI use
     _pyinstaller(APP_NAME, GUI_ENTRY,
-                 ["--onefile", "--windowed", *hidden_imports(), *_excludes()])
+                 ["--onefile", "--windowed", *hidden_imports(), *bundled_assets(),
+                  *_excludes()])
     _pyinstaller(f"{APP_NAME}Cli", CLI_ENTRY,
                  ["--onefile", "--console", *_excludes(cli=True)])
     exes = [DIST / f"{APP_NAME}.exe", DIST / f"{APP_NAME}Cli.exe"]
@@ -162,7 +177,8 @@ def build_exe() -> list[Path]:
 # --------------------------------------------------------------------------
 
 def build_dmg() -> Path:
-    _pyinstaller(APP_NAME, GUI_ENTRY, ["--windowed", *hidden_imports()])
+    _pyinstaller(APP_NAME, GUI_ENTRY,
+                 ["--windowed", *hidden_imports(), *bundled_assets()])
     app = DIST / f"{APP_NAME}.app"
     if not app.is_file() and not app.is_dir():
         raise SystemExit(f"PyInstaller did not produce {app}")
