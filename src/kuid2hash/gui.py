@@ -12,10 +12,11 @@ import sys
 import webbrowser
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QFont, QFontMetrics, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -59,7 +60,6 @@ class KuidWindow(QWidget):
 
     def _build(self) -> None:
         self.setWindowTitle(APP_TITLE)
-        self.setFixedSize(360, 210)
         icon_path = _resource_path("Chromatix-Keyboard-Keys-Hash.ico")
         if icon_path:
             self.setWindowIcon(QIcon(icon_path))
@@ -74,14 +74,13 @@ class KuidWindow(QWidget):
         form.setContentsMargins(12, 10, 12, 8)
         form.setSpacing(8)
 
-        def row(label_text: str, edit: QLineEdit) -> None:
-            box = QHBoxLayout()
-            label = QLabel(label_text)
-            label.setFont(bold)
-            edit.setFont(bold)
-            box.addWidget(label)
-            box.addWidget(edit)
-            form.addLayout(box)
+        # one grid so the labels share a column and every line edit starts at
+        # the same x; column 1 is how wide a full kuid2 string needs, column 2
+        # absorbs whatever extra the window has, so the edits never stretch
+        fields = QGridLayout()
+        fields.setSpacing(8)
+        fields.setColumnStretch(1, 0)
+        fields.setColumnStretch(2, 1)
 
         self.kuid_edit = QLineEdit()
         self.hex_edit = QLineEdit()
@@ -89,36 +88,66 @@ class KuidWindow(QWidget):
         self.hash_edit = QLineEdit()
         self.hash_edit.setReadOnly(True)
 
-        row("KUID:", self.kuid_edit)
-        row("HEX:", self.hex_edit)
-        row("HASH:", self.hash_edit)
-
         self.reverse_check = QCheckBox("Reverse kuid")
         self.reverse_check.setFont(QFont(self.font().family(), 10))
-        check_row = QHBoxLayout()
-        spacer_left = QLabel("")
-        spacer_right = QLabel("")
-        check_row.addWidget(spacer_left)
-        check_row.addWidget(self.reverse_check)
-        check_row.addWidget(spacer_right)
-        form.addLayout(check_row)
 
+        # how wide each box needs to be: the kuid/hex edits must fit the
+        # longest value we display, a full kuid2 string. The hash is only ever
+        # "hash-XX", so its box is half that width; it also has to leave room
+        # for the reverse checkbox sharing its row, and can never be wider than
+        # the edits column minus the checkbox and the gap between them
+        fm = QFontMetrics(bold)
+        edit_min = fm.horizontalAdvance("<kuid2:474195:123456:1>") + 50
+        check_min = self.reverse_check.minimumSizeHint().width()
+        hash_min = min(edit_min // 2, edit_min - check_min - fields.spacing())
+
+        for r, (label_text, edit) in enumerate(
+            (("KUID:", self.kuid_edit), ("HEX:", self.hex_edit))
+        ):
+            label = QLabel(label_text)
+            label.setFont(bold)
+            edit.setFont(bold)
+            edit.setMinimumWidth(edit_min)
+            fields.addWidget(label, r, 0)
+            fields.addWidget(edit, r, 1)
+
+        # the hash row holds a short box, left aligned, and the reverse
+        # checkbox at the right edge of the edits column; the box needs its
+        # width as both a minimum and a maximum, otherwise the cell stretches
+        # it back out and it ends up underneath the checkbox
+        hash_label = QLabel("HASH:")
+        hash_label.setFont(bold)
+        self.hash_edit.setFont(bold)
+        self.hash_edit.setMinimumWidth(hash_min)
+        self.hash_edit.setMaximumWidth(hash_min)
+        fields.addWidget(hash_label, 2, 0)
+        fields.addWidget(self.hash_edit, 2, 1, Qt.AlignmentFlag.AlignLeft)
+        fields.addWidget(self.reverse_check, 2, 1, Qt.AlignmentFlag.AlignRight)
+        form.addLayout(fields)
+
+        # the credit and the repo link share one row, credit at the left edge
+        # and link at the right, which saves a row of height
+        footer = QHBoxLayout()
         credit = QLabel("SilverGreen93 (c) 2026")
         credit.setFont(small)
-        credit.setAlignment(Qt.AlignmentFlag.AlignHCenter)
-        form.addWidget(credit)
-
-        link_text = "https://github.com/SilverGreen93"
+        link_text = "GitHub"
         link = QLabel(f'<a href="{GITHUB_URL}">{link_text}</a>')
         link.setFont(small)
-        link.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         link.setOpenExternalLinks(False)
         link.linkActivated.connect(lambda: webbrowser.open(GITHUB_URL))
-        form.addWidget(link)
+        footer.addWidget(credit)
+        footer.addStretch(1)
+        footer.addWidget(link)
+        form.addLayout(footer)
 
         self.kuid_edit.textChanged.connect(self._on_kuid_changed)
         self.hex_edit.textChanged.connect(self._on_hex_changed)
         self.reverse_check.toggled.connect(self._on_reverse_toggled)
+
+        # size the window to its content instead of hardcoded dimensions; a
+        # fixed height keeps the layout spacings from stretching apart
+        hint = self.sizeHint().expandedTo(self.minimumSizeHint())
+        self.setFixedSize(hint)
 
     # -- behaviour ---------------------------------------------------------
 
