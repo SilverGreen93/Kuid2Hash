@@ -37,6 +37,7 @@ jobs:
         include:
           - os: windows-latest
             artifact: exe
+            upload: dist/*.zip   # both exes ship inside the zip, not loose
           - os: macos-14
             artifact: dmg
           - os: ubuntu-22.04
@@ -67,7 +68,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: kuid2hash-${{ matrix.artifact }}
-          path: dist/*
+          path: ${{ matrix.upload || 'dist/*' }}
 
   release:
     needs: build

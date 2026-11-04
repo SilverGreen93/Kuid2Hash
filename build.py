@@ -6,6 +6,7 @@ supports:
 
     Windows       -> dist/Kuid2Hash.exe            (one-file, GUI)
                      dist/Kuid2HashCli.exe         (one-file, console CLI)
+                     dist/Kuid2Hash-<ver>-windows.zip  (both exes, released)
     macOS         -> dist/Kuid2Hash-<ver>.dmg      (.app bundle + hdiutil)
     Linux (deb)   -> dist/kuid2hash_<ver>_amd64.deb   (needs fpm or dpkg)
     Linux (zst)   -> dist/kuid2hash-<ver>-x86_64.pkg.tar.zst (needs arch-package-build or pacman's package files via fpm)
@@ -225,7 +226,13 @@ def build_exe() -> list[Path]:
     for exe in exes:
         if not exe.is_file():
             raise SystemExit(f"PyInstaller did not produce {exe}")
-    return exes
+    # release ships one zip (like dmg/deb/zst do); the loose exes stay in
+    # dist for local testing, the workflow uploads only the zip for Windows
+    zip_path = DIST / f"{APP_NAME}-{VERSION}-windows.zip"
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for exe in exes:
+            zf.write(exe, exe.name)
+    return [*exes, zip_path]
 
 
 # --------------------------------------------------------------------------
