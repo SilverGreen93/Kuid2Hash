@@ -78,3 +78,9 @@ On Windows the GUI and CLI ship as separate executables: a windowed exe cannot w
 
 - Windows 10 or newer, macOS 12+ (Apple Silicon/Intel), or any recent Linux with Python 3.10+
 - The GUI packages bundle PySide6 (Qt 6); the deb/zst packages depend on the system Python and expect `PySide6` to be installed for GUI use (`pip install PySide6-Essentials`)
+
+## Related Trainz tools
+
+- [CDP Explorer](https://github.com/SilverGreen93/CDPExplorer)
+- [TZ Archiver](https://github.com/SilverGreen93/TZarchiver)
+- [Kuid Lister](https://github.com/SilverGreen93/KuidLister)
