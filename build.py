@@ -249,7 +249,7 @@ def build_dmg() -> Path:
     dmg = DIST / f"{APP_NAME}-{VERSION}-macos.dmg"
     staging = Path(tempfile.mkdtemp())
     try:
-        shutil.copytree(app, staging / APP_NAME + ".app")
+        shutil.copytree(app, staging / (APP_NAME + ".app"))
         if ICON_PNG.is_file():
             # a simple background image for the dmg window
             shutil.copy(ICON_PNG, staging / "background.png")
