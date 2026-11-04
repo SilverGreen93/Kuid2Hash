@@ -265,43 +265,19 @@ def build_dmg() -> Path:
 # Linux: .deb and .pkg.tar.zst via fpm (fallbacks below)
 # --------------------------------------------------------------------------
 
-def _site_packages_dir() -> Path:
-    """Distro-neutral site dir under /usr reported by the running interpreter.
-
-    On Debian/Ubuntu this is /usr/lib/python3/dist-packages (deb_system
-    scheme), on Arch and most others /usr/lib/python3.X/site-packages.
-    Both are on sys.path by default.
-    """
-    import sysconfig
-
-    # Try distro-specific schemes in order of preference
-    for scheme in ("deb_system", "posix_local"):
-        try:
-            path = sysconfig.get_path(
-                "purelib", scheme=scheme,
-                vars={"base": "/usr", "platbase": "/usr"},
-            )
-            return Path(path)
-        except (KeyError, Exception):
-            continue
-    # Fallback: derive from the default purelib, stripping the prefix
-    # (e.g. /usr/local/lib/python3.X/dist-packages -> /usr/lib/python3.X/dist-packages)
-    purelib = Path(sysconfig.get_path("purelib"))
-    parts = purelib.parts
-    # Find the "lib" component and rebuild under /usr
-    if "lib" in parts:
-        idx = parts.index("lib")
-        return Path("/usr") / Path(*parts[idx:])
-    return Path("/usr/lib") / purelib.name
+# Distro- and Python-version-neutral home for the pure-Python app inside the
+# Linux packages. Distro site dirs are all different (Debian/Ubuntu:
+# /usr/lib/python3/dist-packages, Arch & co: /usr/lib/python3.X/site-packages,
+# and X changes every Python release), so we install here and put the dir on
+# sys.path via PYTHONPATH from the launcher script instead.
+APP_PYDIR = "share/kuid2hash/python"
 
 
 def _install_tree(prefix: Path) -> None:
     """Install the app into a prefix for packaging.
 
-    Builds a wheel with pip, then extracts the package files into the
-    interpreter's site-packages dir under /usr. This is distro-neutral:
-    on Debian that is /usr/lib/python3/dist-packages, on Arch and most
-    others /usr/lib/python3.X/site-packages - both on sys.path by default.
+    Builds a wheel with pip, then extracts the package files into
+    /usr/share/<APP lower>/python under the prefix (see APP_PYDIR).
     """
     tmp = Path(tempfile.mkdtemp())
     try:
@@ -311,12 +287,8 @@ def _install_tree(prefix: Path) -> None:
         if not wheels:
             raise RuntimeError("pip wheel produced no wheel file")
 
-        # prefix already ends with /usr, so strip the leading /usr from the site dir
-        site_dir = _site_packages_dir()
-        parts = site_dir.parts  # e.g. ('/', 'usr', 'lib', 'python3', 'dist-packages')
-        # drop the leading '/' and 'usr'
-        rel = Path(*parts[2:]) if parts[:2] == ('/', 'usr') else Path(*parts[1:])
-        target = prefix / rel
+        # prefix already ends with /usr
+        target = prefix / APP_PYDIR
         target.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(wheels[0]) as zf:
             for name in zf.namelist():
@@ -432,12 +404,19 @@ def _stage_unix_root(pkg_dir: Path) -> None:
         shutil.rmtree(prefix / "usr" / junk, ignore_errors=True)
         shutil.rmtree(prefix / junk, ignore_errors=True)
 
-    # wrap the console script so PATH works without activating anything
+    # wrap the console script so PATH works without activating anything;
+    # the PYTHONPATH line is what makes the app importable on every distro
+    # (the package is installed under /usr/share, not a distro site dir)
     bindir = prefix / "usr" / "bin"
     bindir.mkdir(parents=True, exist_ok=True)
     wrapper = bindir / "kuid2hash"
+    app_py = "/usr/" + APP_PYDIR
     wrapper.write_text(
-        "#!/bin/sh\nexec python3 -m kuid2hash.cli \"$@\"\n", newline="\n"
+        "#!/bin/sh\n"
+        f'PYTHONPATH="{app_py}${{PYTHONPATH:+:$PYTHONPATH}}"\n'
+        "export PYTHONPATH\n"
+        'exec python3 -m kuid2hash.cli "$@"\n',
+        newline="\n",
     )
     wrapper.chmod(0o755)
 
