@@ -41,7 +41,7 @@ def _resource_path(name: str) -> str | None:
         base = _ASSET_DIR / name
     return str(base) if base.is_file() else None
 
-APP_TITLE = "Kuid2Hash v2.0"
+APP_TITLE = "Kuid2Hash v3.0"
 GITHUB_URL = "https://github.com/SilverGreen93/Kuid2Hash"
 ICON_FILE = "Chromatix-Keyboard-Keys-Hash.ico"
 
@@ -139,7 +139,7 @@ class KuidWindow(QWidget):
         # the credit and the repo link share one row, credit at the left edge
         # and link at the right, which saves a row of height
         footer = QHBoxLayout()
-        credit = QLabel("SilverGreen93 (c) 2026")
+        credit = QLabel("© 2026 SilverGreen93")
         credit.setFont(small)
         link_text = "GitHub"
         link = QLabel(f'<a href="{GITHUB_URL}">{link_text}</a>')

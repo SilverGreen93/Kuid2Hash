@@ -21,6 +21,7 @@ on each OS in a matrix and uploads the results to the GitHub release.
 from __future__ import annotations
 
 import argparse
+import datetime
 import os
 import platform
 import shutil
@@ -32,7 +33,8 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent
 APP_NAME = "Kuid2Hash"
-VERSION = "2.0.0"
+AUTHOR = "SilverGreen93"
+VERSION = "3.0"
 ICON_ICO = ROOT / "assets" / "Chromatix-Keyboard-Keys-Hash.ico"
 ICON_PNG = ROOT / "assets" / "kuid2hash.png"
 GUI_ENTRY = ROOT / "kuid2hash_gui_entry.py"
@@ -122,6 +124,57 @@ def bundled_assets() -> list[str]:
     return flags
 
 
+def _version_parts(count: int = 4) -> tuple[int, ...]:
+    """VERSION as a zero padded tuple of ints: the PE version resource wants
+    four numbers, so "3.0" becomes (3, 0, 0, 0)."""
+    numbers = [int(part) for part in VERSION.split(".") if part.isdigit()]
+    return tuple((numbers + [0] * count)[:count])
+
+
+def version_file(name: str, description: str) -> list[str]:
+    """--version-file flags, so the exe carries file/product version and name.
+
+    Windows shows these in the file's Properties dialog and in the taskbar
+    group name; without a version resource the exe reports nothing at all.
+    """
+    from PyInstaller.utils.win32 import versioninfo as vi
+
+    path = ROOT / "build" / f"{name}.version.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    info = vi.VSVersionInfo(
+        ffi=vi.FixedFileInfo(
+            filevers=_version_parts(),
+            prodvers=_version_parts(),
+            mask=0x3F,
+            flags=0x0,
+            OS=0x40004,  # VOS_NT_WINDOWS32
+            fileType=0x1,  # VFT_APP
+            subtype=0x0,
+            date=(0, 0),
+        ),
+        kids=[
+            vi.StringFileInfo([
+                vi.StringTable("040904B0", [
+                    vi.StringStruct("FileDescription", description),
+                    vi.StringStruct("FileVersion", VERSION),
+                    vi.StringStruct("InternalName", name),
+                    vi.StringStruct("OriginalFilename", f"{name}.exe"),
+                    vi.StringStruct("ProductName", APP_NAME),
+                    vi.StringStruct("ProductVersion", VERSION),
+                    vi.StringStruct("CompanyName", AUTHOR),
+                    vi.StringStruct("LegalCopyright",
+                                    f"© {datetime.date.today().year} {AUTHOR}"),
+                ]),
+            ]),
+            vi.VarFileInfo([vi.VarStruct("Translation", [0x409, 1200])]),
+        ],
+    )
+    # str(info) is the format PyInstaller reads back with eval() in
+    # load_version_info_from_text_file (repr() qualifies the names and fails).
+    path.write_text(str(info), encoding="utf-8")
+    return ["--version-file", str(path)]
+
+
 # Qt modules we don't use (widgets-only app). Excluding them prevents
 # PyInstaller from bundling Qt6Qml, Qt6Quick, Qt6QuickControls2*, Qt6Designer,
 # Qt6LabsStyleKit, Qt6Network + OpenSSL, etc. (~30 MB on Windows).
@@ -162,9 +215,12 @@ def build_exe() -> list[Path]:
     #   Kuid2HashCli.exe --console : normal console stdout/stderr for CLI use
     _pyinstaller(APP_NAME, GUI_ENTRY,
                  ["--onefile", "--windowed", *hidden_imports(), *bundled_assets(),
+                  *version_file(APP_NAME, "Kuid2Hash - Trainz KUID to hex/hash converter"),
                   *_excludes()])
     _pyinstaller(f"{APP_NAME}Cli", CLI_ENTRY,
-                 ["--onefile", "--console", *_excludes(cli=True)])
+                 ["--onefile", "--console",
+                  *version_file(f"{APP_NAME}Cli", "Kuid2Hash command line"),
+                  *_excludes(cli=True)])
     exes = [DIST / f"{APP_NAME}.exe", DIST / f"{APP_NAME}Cli.exe"]
     for exe in exes:
         if not exe.is_file():
