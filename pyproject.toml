@@ -14,7 +14,7 @@ authors = [{ name = "SilverGreen93" }]
 [project.optional-dependencies]
 gui = ["PySide6-Essentials>=6.5"]
 test = ["pytest>=7"]
-build = ["pyinstaller>=6"]
+build = ["pyinstaller>=6", "pillow>=10"]  # pillow: PyInstaller converts .ico -> .icns on macOS
 
 [project.scripts]
 kuid2hash = "kuid2hash.cli:main"
