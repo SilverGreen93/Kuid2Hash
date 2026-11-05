@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
 
 from pathlib import Path
 
+from . import __version__
 from .converter import compute_hash, convert_hex, hex_to_kuid, kuid_to_hex, rev_kuid
 
 __all__ = ["KuidWindow", "run_gui"]
@@ -41,7 +42,7 @@ def _resource_path(name: str) -> str | None:
         base = _ASSET_DIR / name
     return str(base) if base.is_file() else None
 
-APP_TITLE = "Kuid2Hash v3.0"
+APP_TITLE = f"Kuid2Hash {__version__}"
 GITHUB_URL = "https://github.com/SilverGreen93/Kuid2Hash"
 ICON_FILE = "Chromatix-Keyboard-Keys-Hash.ico"
 
