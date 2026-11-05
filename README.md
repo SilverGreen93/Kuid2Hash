@@ -70,9 +70,27 @@ python build.py                 # build everything this host supports
 python build.py --only exe      # build a single artifact
 ```
 
-PyInstaller cannot cross-compile, so each artifact must be built on its target OS. The GitHub Actions workflow in `.github/workflows/release.yml` builds all four packages (Windows exes, macOS dmg, Linux deb and zst) automatically on every `v*` tag and attaches them to the release.
+PyInstaller cannot cross-compile, so each artifact must be built on its target OS. The GitHub Actions workflow in `.github/workflows/release.yml` builds all packages (Windows exes zip + MSI installer, macOS dmg, Linux deb and zst) automatically on every `v*` tag and attaches them to the release.
 
 On Windows the GUI and CLI ship as separate executables: a windowed exe cannot write to the console when invoked from a terminal with arguments, so `Kuid2Hash.exe` is the GUI and `Kuid2HashCli.exe` is the command line tool.
+
+### Windows MSI installer
+
+The MSI wraps the two exes from `dist\` and installs for the current user only — no elevation needed, files land in `%LOCALAPPDATA%\Programs\Kuid2Hash`, and a Start Menu shortcut is created. Reinstalling the same version over an existing install is allowed. Build it after the exes:
+
+```powershell
+python build.py --only exe                  # produces dist\Kuid2Hash.exe + Kuid2HashCli.exe
+pwsh installer/build.ps1                    # produces dist\Kuid2Hash-<ver>.msi
+```
+
+The build uses the WiX v5 command-line tool; install it once with:
+
+```powershell
+dotnet tool install --global wix
+wix extension add -g WixToolset.UI.wixext
+```
+
+The MSI version is read from `pyproject.toml` (or passed with `-Version`, e.g. `pwsh installer/build.ps1 -Version v3.0`). The CI workflow builds the MSI automatically on the Windows job and attaches it to the release.
 
 ## System requirements
 

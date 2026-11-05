@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kuid2Hash - per-user MSI installer (WiX v5).
+
+  Packages the two PyInstaller one-file exes from dist\ (GUI + CLI) into a
+  single small MSI that installs for the current user only: no elevation,
+  files under %LOCALAPPDATA%\Programs\Kuid2Hash, Start Menu shortcut, and an
+  Add/Remove Programs entry in HKCU. Reinstalling the same version over an
+  existing install is allowed (AllowSameVersionUpgrades).
+
+  Build with installer\build.ps1 (build the exes first with build.py), or
+  manually:
+
+    wix build installer\Product.wxs -ext WixToolset.UI.wixext -d Version=3.0 -o Kuid2Hash-3.0.msi
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+
+  <?ifndef Version?><?define Version = "3.0" ?><?endif?>
+  <?ifndef DistDir?><?define DistDir = "..\dist" ?><?endif?>
+  <?ifndef AssetsDir?><?define AssetsDir = "..\assets" ?><?endif?>
+
+  <Package Name="Kuid2Hash"
+           Manufacturer="SilverGreen93"
+           Version="$(var.Version)"
+           UpgradeCode="D57F5DA0-6FF2-4194-BBCE-BE8AFA897FF8"
+           Language="1033"
+           Scope="perUser"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <!--
+      "perUser" produces a pure per-user package: ALLUSERS is left unset, so
+      Windows Installer always uses the per-user context - no elevation is
+      ever attempted and the Add/Remove Programs entry registers in HKCU.
+    -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Setup wizard: Welcome -> Verify Ready -> progress -> Finish. -->
+    <UIRef Id="InstallWizard" />
+
+    <Icon Id="AppIcon.ico" SourceFile="$(var.AssetsDir)\Chromatix-Keyboard-Keys-Hash.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <!-- Installs under %LOCALAPPDATA%\Programs\Kuid2Hash (no admin). -->
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="LocalProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="Kuid2Hash" />
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Start Menu shortcut (per-user, shown for the installing user). -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationMenuFolder" Name="Kuid2Hash" />
+    </StandardDirectory>
+
+    <Feature Id="MainApplication" Title="Kuid2Hash" Level="1">
+      <ComponentGroupRef Id="ApplicationFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+  </Package>
+
+  <Fragment>
+    <ComponentGroup Id="ApplicationFiles" Directory="INSTALLFOLDER">
+      <Component Id="GuiExeComp">
+        <File Source="$(var.DistDir)\Kuid2Hash.exe" />
+      </Component>
+      <Component Id="CliExeComp">
+        <File Source="$(var.DistDir)\Kuid2HashCli.exe" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+
+  <Fragment>
+    <Component Id="StartMenuShortcut" Directory="ApplicationMenuFolder">
+      <RegistryValue Root="HKCU"
+                     Key="Software\Kuid2Hash"
+                     Name="StartMenuShortcut"
+                     Type="integer"
+                     Value="1"
+                     KeyPath="yes" />
+      <Shortcut Id="ApplicationShortcut"
+                Name="Kuid2Hash"
+                Description="Trainz KUID to hex/hash converter"
+                Target="[INSTALLFOLDER]Kuid2Hash.exe"
+                WorkingDirectory="INSTALLFOLDER" />
+      <RemoveFolder Id="RemoveApplicationMenuFolder" On="uninstall" />
+    </Component>
+  </Fragment>
+
+  <!--
+    Standard WiX dialogs forming a simple wizard for the per-user install:
+    Welcome -> Verify Ready (Install) -> progress -> Finish. Repair/Remove
+    from Programs and Features uses the maintenance dialogs. The standard
+    sequence shows ProgressDlg, the Verify Ready and Finish dialogs.
+  -->
+  <Fragment>
+    <UI Id="InstallWizard">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Segoe UI" Size="9" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Segoe UI" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Segoe UI" Size="10" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <DialogRef Id="WelcomeDlg" />
+      <DialogRef Id="VerifyReadyDlg" />
+      <DialogRef Id="ExitDialog" />
+      <DialogRef Id="MaintenanceWelcomeDlg" />
+      <DialogRef Id="MaintenanceTypeDlg" />
+
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" />
+
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="1" Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed AND NOT PATCH" />
+
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
+
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
+    </UI>
+
+    <UIRef Id="WixUI_Common" />
+  </Fragment>
+
+</Wix>

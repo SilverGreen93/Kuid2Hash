@@ -37,7 +37,10 @@ jobs:
         include:
           - os: windows-latest
             artifact: exe
-            upload: dist/*.zip   # both exes ship inside the zip, not loose
+            wix: true           # also package a per-user MSI installer
+            upload: |           # exes ship inside the zip, not loose; msi uploads directly
+              dist/*.zip
+              dist/*.msi
           - os: macos-14
             artifact: dmg
           - os: ubuntu-22.04
@@ -62,8 +65,20 @@ jobs:
       - name: Install Python build deps
         run: python -m pip install --upgrade pip ".[gui,build]"
 
+      - name: Install WiX v5  # MSI packaging
+        if: matrix.wix
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add -g WixToolset.UI.wixext/5.0.2
+
       - name: Build ${{ matrix.artifact }}
         run: python build.py --only ${{ matrix.artifact }}
+
+      - name: Build MSI installer  # packages the exes just built into dist\
+        if: matrix.wix
+        shell: pwsh
+        run: pwsh installer/build.ps1
 
       - uses: actions/upload-artifact@v7
         with:
