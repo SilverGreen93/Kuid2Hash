@@ -41,7 +41,7 @@ jobs:
             upload: |           # exes ship inside the zip, not loose; msi uploads directly
               dist/*.zip
               dist/*.msi
-          - os: macos-14
+          - os: macos-15          # arm64; GitHub retired macos-14 on 2026-11-02
             artifact: dmg
           - os: ubuntu-22.04
             artifact: deb
