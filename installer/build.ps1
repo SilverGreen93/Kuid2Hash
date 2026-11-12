@@ -40,7 +40,11 @@ $msi = Join-Path $distDir "Kuid2Hash-$Version.msi"
 Remove-Item $msi -Force -ErrorAction SilentlyContinue
 
 Write-Output "Building $msi ..."
+# -arch x64 matters: WiX defaults to an x86 package, and the ARP entry then
+# lands in HKLM\...\Wow6432Node (winget reports it as ARP\Machine\X86) even
+# though the exes are 64-bit. WiX v5 has no architecture attribute in the wxs.
 wix build (Join-Path $PSScriptRoot 'Product.wxs') `
+    -arch x64 `
     -ext WixToolset.UI.wixext `
     -d "Version=$Version" `
     -d "DistDir=$distDir" `
