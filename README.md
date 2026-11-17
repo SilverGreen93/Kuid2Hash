@@ -100,5 +100,5 @@ The MSI version is read from `pyproject.toml` (or passed with `-Version`, e.g. `
 ## Related Trainz tools
 
 - [CDP Explorer](https://github.com/SilverGreen93/CDPExplorer)
-- [TZ Archiver](https://github.com/SilverGreen93/TZarchiver)
+- [TZarchiver](https://github.com/SilverGreen93/TZarchiver)
 - [Kuid Lister](https://github.com/SilverGreen93/KuidLister)
